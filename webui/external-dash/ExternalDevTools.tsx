@@ -5,8 +5,10 @@ import DevTools from "./_components/devtools/DevTools";
 import { User } from "./_types/User";
 import Providers from "./providers";
 
-interface Props {}
-export default function ExternalDevTools({}: Props) {
+interface Props {
+  users: User[];
+}
+export default function ExternalDevTools({ users }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
@@ -14,6 +16,13 @@ export default function ExternalDevTools({}: Props) {
   const [username, setUsername] = useState("");
   const [currentUser, setCurrentUser] = useState<User>();
   const [showQueries, setShowQueries] = useState(true);
+
+  // Default to the first user if no user is selected
+  useEffect(() => {
+    if (users.length && !currentUser) {
+      setCurrentUser(users[0]);
+    }
+  }, [users]);
 
   return (
     <Providers>
@@ -63,13 +72,13 @@ export default function ExternalDevTools({}: Props) {
               <div className="flex">
                 <select
                   value={username}
-                  disabled={!clientUsers.length}
+                  disabled={!users.length}
                   className="p-1 m-1 border-2 border-[#d0d5dd]   shadow-lg rounded-md mx-3"
                   onChange={(e) => {
                     setUsername(e.target.value.trim());
                   }}
                 >
-                  {clientUsers.length ? (
+                  {users.length ? (
                     <option key="default" hidden value="">
                       Select a user
                     </option>
@@ -78,8 +87,11 @@ export default function ExternalDevTools({}: Props) {
                       No connected users
                     </option>
                   )}
-                  {clientUsers.map((user, index) => (
+                  {users.map((user, index) => (
                     <option
+                      onClick={() => {
+                        setCurrentUser(user);
+                      }}
                       key={index + user.device}
                       value={user.device.toString()}
                     >

@@ -1,11 +1,14 @@
-export let useQueryDevTools: typeof import("./useQueryDevTools").useQueryDevTools;
+export let useSyncQueries: typeof import("./useSyncQueries").useSyncQueries;
 // @ts-ignore process.env.NODE_ENV is defined by metro transform plugins
 if (process.env.NODE_ENV !== "production") {
-  useQueryDevTools = require("./useQueryDevTools").useQueryDevTools;
+  useSyncQueries = require("./useSyncQueries").useSyncQueries;
 } else {
-  useQueryDevTools = () => ({
-    queries: [],
+  useSyncQueries = () => ({
     isConnected: false,
-    setQueries: () => {},
+    syncQueriesMessage: {
+      queries: [],
+      device: "ios",
+    },
+    setSyncQueriesMessage: () => {},
   });
 }

@@ -11,5 +11,5 @@ export interface Command {
     | "Data Delete";
   data?: any;
   newValue?: any;
-  dataPath?: Array<string>;
+  dataPath?: string[];
 }

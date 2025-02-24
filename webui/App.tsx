@@ -3,30 +3,48 @@ import { useDevToolsPluginClient, type EventSubscription } from "expo/devtools";
 import React, { useEffect, useState } from "react";
 
 import "./index.css";
+import { ExternalDevTools } from "./external-dash";
+import { User } from "./external-dash/_types/User";
 interface ExtendedQuery extends Query {
   observersCount?: number; //  getObserversCount()
   isQueryStale?: boolean; // isStale()
 }
-
+const SYNC_QUERIES_MESSAGE_TYPE = "allQueries" as const;
+interface SyncQueriesMessage {
+  queries: ExtendedQuery[];
+  device: "ios" | "android" | "web" | "windows" | "macos";
+}
 export default function App() {
   const queryClient = new QueryClient();
-
-  const [allQueries, setAllQueries] = useState<any>();
-
+  const [users, setUsers] = useState<User[]>([]);
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
 
   useEffect(() => {
-    console.log("client", client?.connectionInfo);
     const subscriptions: EventSubscription[] = [];
     subscriptions.push(
-      client?.addMessageListener("allQueries", (data) => {
-        console.log("allQueries", data);
-        setAllQueries(data);
-        // alert(`Received ping from ${data.from}`);
-        // client?.sendMessage("ping", { from: "web" });
-      })
+      client?.addMessageListener(
+        SYNC_QUERIES_MESSAGE_TYPE,
+        (data: SyncQueriesMessage) => {
+          console.log("device", data.device);
+          console.log("queries", data.queries);
+          setUsers((prevUsers) => {
+            // Filter out any existing user with the same device
+            const otherUsers = prevUsers.filter(
+              (user) => user.device !== data.device
+            );
+            // Add the new user data
+            return [
+              ...otherUsers,
+              {
+                device: data.device,
+                allQueries: data.queries,
+              },
+            ];
+          });
+        }
+      )
     );
 
     return () => {
@@ -46,10 +64,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1>{client?.isConnected() ? "Connected" : "Not Connected"}</h1>
-        <p>{allQueries?.queries?.length || 0}</p>
-      </div>
+      <ExternalDevTools users={users} />
     </QueryClientProvider>
   );
 }

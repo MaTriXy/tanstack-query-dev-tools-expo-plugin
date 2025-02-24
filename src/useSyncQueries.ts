@@ -1,21 +1,41 @@
 import { QueryClient, Query } from "@tanstack/react-query";
-import { DevToolsPluginClient } from "expo/devtools";
+import { useDevToolsPluginClient } from "expo/devtools";
 import { deepEqual } from "fast-equals";
 import { useEffect, useState, useRef } from "react";
-// import { ClientQuery } from "./_types/ClientQuery";
-// import { User } from "./_types/User";
+import { Platform } from "react-native";
+
+interface SyncQueriesMessage {
+  queries: ExtendedQuery[];
+  device: "ios" | "android" | "web" | "windows" | "macos";
+}
+const SYNC_QUERIES_MESSAGE_TYPE = "allQueries" as const;
+
 export interface ExtendedQuery extends Query {
   observersCount?: number; //  getObserversCount()
   isQueryStale?: boolean; // isStale()
 }
 interface Props {
   queryClient: QueryClient | any;
-  client: DevToolsPluginClient | null;
 }
-export function useSyncQueries({ queryClient, client }: Props) {
-  const [queries, setQueries] = useState<ExtendedQuery[]>([]);
+export function useSyncQueries({ queryClient }: Props) {
+  const client = useDevToolsPluginClient(
+    "tanstack-query-dev-tools-expo-plugin"
+  );
+
+  const [syncQueriesMessage, setSyncQueriesMessage] =
+    useState<SyncQueriesMessage>({
+      queries: [],
+      device: Platform.OS,
+    });
   // Store the previous data states for comparison
   const prevDataRef = useRef<any[]>([]);
+
+  function syncQuries(queries: ExtendedQuery[]): void {
+    client?.sendMessage(SYNC_QUERIES_MESSAGE_TYPE, {
+      queries,
+      device: Platform.OS,
+    });
+  }
 
   useEffect(() => {
     const updateQueries = () => {
@@ -37,33 +57,41 @@ export function useSyncQueries({ queryClient, client }: Props) {
       }));
       // Check if the specific parts of the state of any query have changed using deep comparison
       if (!deepEqual(prevDataRef.current, currentDataStates)) {
-        // add observersCount and isQueryStale to response as they're functions the server dashboard client can't call
-        const newAllQueries = allQueries.map((query: Query) => {
-          return {
-            ...query,
-            observersCount: query.getObserversCount(),
-            isQueryStale: query.isStale(),
-          } as ExtendedQuery;
+        const newAllQueries = allQueries.map(
+          (query: Query) =>
+            ({
+              ...query,
+              observersCount: query.getObserversCount(),
+              isQueryStale: query.isStale(),
+            }) as ExtendedQuery
+        );
+
+        prevDataRef.current = currentDataStates;
+
+        // Move state updates to a microtask to avoid render phase updates
+        Promise.resolve().then(() => {
+          setSyncQueriesMessage({
+            queries: allQueries,
+            device: Platform.OS,
+          });
+          syncQuries(newAllQueries);
         });
-        setQueries(allQueries);
-        prevDataRef.current = currentDataStates; // Update the ref for future comparison
-        // Broadcast new queries
-        client?.sendMessage("allQueries", newAllQueries);
       }
     };
-    // Perform an initial update
-    updateQueries();
-    // Subscribe to the query cache to run updates on changes
-    const unsubscribe = queryClient.getQueryCache().subscribe(updateQueries);
 
-    // Cleanup the subscription when the component unmounts
+    // Wrap initial update in microtask
+    Promise.resolve().then(updateQueries);
+
+    const unsubscribe = queryClient.getQueryCache().subscribe(updateQueries);
     return () => unsubscribe();
   }, [queryClient]);
 
   // Broadcast queries again if we re-connect
   useEffect(() => {
-    client?.sendMessage("allQueries", queries);
+    if (syncQueriesMessage.queries.length > 0) {
+      Promise.resolve().then(() => syncQuries(syncQueriesMessage.queries));
+    }
   }, [client, queryClient]);
 
-  return { queries };
+  return { isConnected: !!client, syncQueriesMessage, setSyncQueriesMessage };
 }
