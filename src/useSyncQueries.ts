@@ -1,34 +1,25 @@
-import { Query, QueryClient } from "@tanstack/react-query";
-import { useDevToolsPluginClient } from "expo/devtools";
+import { QueryClient, Query } from "@tanstack/react-query";
+import { DevToolsPluginClient } from "expo/devtools";
 import { deepEqual } from "fast-equals";
-import { useEffect, useRef, useState } from "react";
-
-import { ClientQuery } from "./_types/ClientQuery";
-import { useSyncQueries } from "./useSyncQueries";
-
+import { useEffect, useState, useRef } from "react";
+// import { ClientQuery } from "./_types/ClientQuery";
+// import { User } from "./_types/User";
 export interface ExtendedQuery extends Query {
   observersCount?: number; //  getObserversCount()
   isQueryStale?: boolean; // isStale()
 }
 interface Props {
-  queryClient: QueryClient;
-  query: ClientQuery;
+  queryClient: QueryClient | any;
+  client: DevToolsPluginClient | null;
 }
-export function useQueryDevTools({ queryClient, query }: Props) {
-  const client = useDevToolsPluginClient(
-    "tanstack-query-dev-tools-expo-plugin"
-  );
-  useSyncQueries({ queryClient, client });
+export function useSyncQueries({ queryClient, client }: Props) {
   const [queries, setQueries] = useState<ExtendedQuery[]>([]);
   // Store the previous data states for comparison
   const prevDataRef = useRef<any[]>([]);
-  const isConnected = client?.isConnected();
 
   useEffect(() => {
     const updateQueries = () => {
-      const allQueries = queryClient
-        .getQueryCache()
-        .findAll() as ExtendedQuery[];
+      const allQueries = queryClient.getQueryCache().findAll();
       // Extract the specific parts of the state we want to compare
       const currentDataStates = allQueries.map((query) => ({
         data: query.state.data,
@@ -57,7 +48,7 @@ export function useQueryDevTools({ queryClient, query }: Props) {
         setQueries(allQueries);
         prevDataRef.current = currentDataStates; // Update the ref for future comparison
         // Broadcast new queries
-        client?.sendMessage("allQueries", { queries: newAllQueries });
+        client?.sendMessage("allQueries", newAllQueries);
       }
     };
     // Perform an initial update
@@ -69,13 +60,10 @@ export function useQueryDevTools({ queryClient, query }: Props) {
     return () => unsubscribe();
   }, [queryClient]);
 
+  // Broadcast queries again if we re-connect
   useEffect(() => {
-    client?.sendMessage("allQueries", { queries });
-  }, [isConnected]);
+    client?.sendMessage("allQueries", queries);
+  }, [client, queryClient]);
 
-  return {
-    queries,
-    isConnected,
-    setQueries,
-  };
+  return { queries };
 }

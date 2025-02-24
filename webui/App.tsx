@@ -1,19 +1,24 @@
-import { Query } from "@tanstack/react-query";
+import {
+  Query,
+  QueryClient,
+  QueryClientProvider,
+  QueryState,
+  hydrate,
+} from "@tanstack/react-query";
 import { useDevToolsPluginClient, type EventSubscription } from "expo/devtools";
 import React, { useEffect, useState } from "react";
 
 import "./index.css";
-import { ExternalDevTools } from "./external-dash";
 interface ExtendedQuery extends Query {
   observersCount?: number; //  getObserversCount()
   isQueryStale?: boolean; // isStale()
 }
 
 export default function App() {
-  const [allQueries, setAllQueries] = useState<ExtendedQuery[]>([]);
-  // The template includes a simple example of sending and receiving messages
-  // between the plugin and the app. useDevToolsPluginClient, imported from expo/devtools,
-  //  provides functionality for sending and receiving messages between the plugin and the app.
+  const queryClient = new QueryClient();
+
+  const [allQueries, setAllQueries] = useState<any>();
+
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
@@ -22,7 +27,8 @@ export default function App() {
     const subscriptions: EventSubscription[] = [];
     subscriptions.push(
       client?.addMessageListener("allQueries", (data) => {
-        setAllQueries(data.queries);
+        console.log("allQueries", data);
+        setAllQueries(data);
         // alert(`Received ping from ${data.from}`);
         // client?.sendMessage("ping", { from: "web" });
       })
@@ -35,26 +41,16 @@ export default function App() {
     };
   }, [client]);
 
+  if (!client) {
+    throw new Error("Query client not found");
+  }
+
   return (
-    <ExternalDevTools
-      client={client}
-      query={allQueries}
-      socketURL={client?.connectionInfo.devServer}
-    />
+    <QueryClientProvider client={queryClient}>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1>{client?.isConnected() ? "Connected" : "Not Connected"}</h1>
+        <p>{allQueries?.queries?.length || 0}</p>
+      </div>
+    </QueryClientProvider>
   );
-
-  // return (
-  //   <div>
-  //     <h1 className="text-3xl font-bold underline text-red-500">
-  //       Hello world!
-  //     </h1>
-  //     <div>Connected: {client?.isConnected ? "true" : "false"}</div>
-  //     <div>Dev Server: {client?.connectionInfo.devServer}</div>
-  //     <div>Messages:</div>
-
-  //     {allQueries.map((query, index) => (
-  //       <div key={index}>{query.queryKey.join(", ")}</div>
-  //     ))}
-  //   </div>
-  // );
 }
