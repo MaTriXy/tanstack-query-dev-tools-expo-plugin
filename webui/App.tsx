@@ -1,10 +1,4 @@
-import {
-  Query,
-  QueryClient,
-  QueryClientProvider,
-  QueryState,
-  hydrate,
-} from "@tanstack/react-query";
+import { Query, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useDevToolsPluginClient, type EventSubscription } from "expo/devtools";
 import React, { useEffect, useState } from "react";
 
@@ -24,6 +18,7 @@ export default function App() {
   );
 
   useEffect(() => {
+    console.log("client", client?.connectionInfo);
     const subscriptions: EventSubscription[] = [];
     subscriptions.push(
       client?.addMessageListener("allQueries", (data) => {
@@ -42,7 +37,11 @@ export default function App() {
   }, [client]);
 
   if (!client) {
-    throw new Error("Query client not found");
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1>No client not found</h1>
+      </div>
+    );
   }
 
   return (

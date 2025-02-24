@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { serialize } from "superjson";
 
 /**
  * Displays a string regardless the type of the data
@@ -10,7 +11,6 @@ export function useSerializedValue(value: any, beautify = false) {
 
   useEffect(() => {
     async function serializeValue() {
-      const { serialize } = await import("superjson");
       const { json } = serialize(value);
       const stringValue = JSON.stringify(json, null, beautify ? 2 : undefined);
       setSerializedValue(stringValue);

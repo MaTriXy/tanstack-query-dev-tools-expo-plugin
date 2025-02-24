@@ -1,14 +1,12 @@
 import { Query, QueryKey } from "@tanstack/react-query";
 import React from "react";
-import { Socket } from "socket.io-client";
 
 import ActionButton from "./ActionButton";
 import { User } from "../../_types/User";
 import { getQueryStatusLabel } from "../../_util/getQueryStatusLabel";
-import sendClientCommand from "../../_util/useSendClientCommand";
+import useSendClientCommand from "../../_util/useSendClientCommand";
 interface Props {
   query: Query<unknown, Error, unknown, QueryKey> | undefined;
-  socket: Socket;
   currentUser: User;
 }
 type DevToolsErrorType = {
@@ -16,7 +14,8 @@ type DevToolsErrorType = {
   initializer: (query: Query<unknown, Error, unknown, QueryKey>) => Error;
 };
 
-export default function QueryActions({ query, socket, currentUser }: Props) {
+export default function QueryActions({ query, currentUser }: Props) {
+  const { sendClientCommand } = useSendClientCommand({ currentUser });
   if (query === undefined) {
     return null;
   }
@@ -36,15 +35,9 @@ export default function QueryActions({ query, socket, currentUser }: Props) {
       return;
     }
     // Send client trigger loading command
-    const socketID = currentUser && currentUser.id;
-    if (!socketID) return;
     sendClientCommand({
-      socket,
-      socketID,
-      command: {
-        queryKey: query.queryKey.toString(),
-        command: coomand,
-      },
+      queryKey: query.queryKey.toString(),
+      command: coomand,
     });
   }
   // Define the actions

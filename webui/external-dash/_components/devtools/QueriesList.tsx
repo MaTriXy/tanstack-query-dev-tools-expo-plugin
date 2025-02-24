@@ -1,20 +1,15 @@
-import React, { useEffect, useState } from "react";
 import { Query } from "@tanstack/react-query";
-import QueryInformation from "./QueryInformation";
-import QueryButton from "./QueryButton";
 import { deepEqual } from "fast-equals";
-import { Socket } from "socket.io-client";
+import React, { useEffect, useState } from "react";
+
+import QueryButton from "./QueryButton";
+import QueryInformation from "./QueryInformation";
 import { User } from "../../_types/User";
 interface Props {
   allQueries: Query[];
-  socket: Socket;
   currentUser: User;
 }
-export default function QueriesList({
-  allQueries,
-  socket,
-  currentUser,
-}: Props) {
+export default function QueriesList({ allQueries, currentUser }: Props) {
   const [selectedQuery, setSelectedQuery] = useState<Query>();
   useEffect(() => {
     const foundQuery = allQueries.find((query) => {
@@ -45,7 +40,6 @@ export default function QueriesList({
       </div>
       {selectedQuery && (
         <QueryInformation
-          socket={socket}
           selectedQuery={selectedQuery}
           currentUser={currentUser}
         />

@@ -7,7 +7,7 @@
  */
 export const updateNestedDataByPath = (
   oldData: unknown,
-  updatePath: Array<string>,
+  updatePath: string[],
   value: unknown
 ): any => {
   if (updatePath.length === 0) {
@@ -41,11 +41,13 @@ export const updateNestedDataByPath = (
     const newData = [...oldData];
 
     if (updatePath.length === 1) {
+      // @ts-ignore
       newData[updatePath[0]] = value;
       return newData;
     }
 
     const [head, ...tail] = updatePath;
+    // @ts-ignore
     newData[head] = updateNestedDataByPath(newData[head], tail, value);
 
     return newData;
@@ -55,11 +57,13 @@ export const updateNestedDataByPath = (
     const newData = { ...oldData };
 
     if (updatePath.length === 1) {
+      // @ts-ignore
       newData[updatePath[0]] = value;
       return newData;
     }
 
     const [head, ...tail] = updatePath;
+    // @ts-ignore
     newData[head] = updateNestedDataByPath(newData[head], tail, value);
 
     return newData;

@@ -1,38 +1,28 @@
+import { useDevToolsPluginClient } from "expo/devtools";
 import React, { useEffect, useState } from "react";
-import useConnectedUsers from "./_hooks/useConnectedUsers";
-import { ClientQuery } from "./_types/ClientQuery";
-import { User } from "./_types/User";
+
 import DevTools from "./_components/devtools/DevTools";
+import { User } from "./_types/User";
 import Providers from "./providers";
 
-interface Props {
-  query: ClientQuery;
-  socketURL: string;
-}
-export default function ExternalDevTools({ query, socketURL }: Props) {
+interface Props {}
+export default function ExternalDevTools({}: Props) {
+  const client = useDevToolsPluginClient(
+    "tanstack-query-dev-tools-expo-plugin"
+  );
+
   const [username, setUsername] = useState("");
   const [currentUser, setCurrentUser] = useState<User>();
-  const [clientUsers, setClientUsers] = useState<User[]>([]);
   const [showQueries, setShowQueries] = useState(true);
-  const { users, isConnected, socket } = useConnectedUsers({
-    query,
-    socketURL,
-  });
-  useEffect(() => {
-    const foundUser = users.find((user) => user.username === username);
-    setCurrentUser(foundUser);
-  }, [setCurrentUser, users, username]);
-  useEffect(() => {
-    setClientUsers(users.filter((user) => user.clientType !== "server"));
-  }, [users]);
+
   return (
     <Providers>
       <div>
         <div
           className={`p-[1px] w-full ${
-            isConnected ? "bg-green-400" : "bg-red-400"
+            client?.isConnected ? "bg-green-400" : "bg-red-400"
           }`}
-        ></div>
+        />
       </div>
       <div className=" w-full h-full py-2 ">
         <div className="border-[#d0d5dd] border-b-2 py-1 flex flex-wrap  ">
@@ -90,10 +80,10 @@ export default function ExternalDevTools({ query, socketURL }: Props) {
                   )}
                   {clientUsers.map((user, index) => (
                     <option
-                      key={index + user.username}
-                      value={user.username.toString()}
+                      key={index + user.device}
+                      value={user.device.toString()}
                     >
-                      {user.username}
+                      {user.device}
                     </option>
                   ))}
                 </select>
@@ -111,7 +101,6 @@ export default function ExternalDevTools({ query, socketURL }: Props) {
         {showQueries ? (
           <DevTools
             allQueries={currentUser?.allQueries}
-            socket={socket}
             currentUser={currentUser}
           />
         ) : (

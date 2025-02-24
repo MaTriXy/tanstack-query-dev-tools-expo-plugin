@@ -7,7 +7,7 @@
  */
 export const deleteNestedDataByPath = (
   oldData: unknown,
-  deletePath: Array<string>
+  deletePath: string[]
 ): any => {
   if (oldData instanceof Map) {
     const newData = new Map(oldData);
@@ -35,7 +35,7 @@ export const deleteNestedDataByPath = (
     }
 
     const [head, ...tail] = deletePath;
-
+    // @ts-ignore
     newData[head] = deleteNestedDataByPath(newData[head], tail);
 
     return newData;
@@ -45,11 +45,13 @@ export const deleteNestedDataByPath = (
     const newData = { ...oldData };
 
     if (deletePath.length === 1) {
+      // @ts-ignore
       delete newData[deletePath[0]];
       return newData;
     }
 
     const [head, ...tail] = deletePath;
+    // @ts-ignore
     newData[head] = deleteNestedDataByPath(newData[head], tail);
 
     return newData;
