@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { useQueryClient, Query } from "@tanstack/react-query";
 import { deepEqual } from "fast-equals";
+import { useEffect, useState } from "react";
 
 function useAllQueries(): Query[] {
   const queryClient = useQueryClient();

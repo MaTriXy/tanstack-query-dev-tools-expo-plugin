@@ -5,10 +5,5 @@ if (process.env.NODE_ENV !== "production") {
 } else {
   useSyncQueries = () => ({
     isConnected: false,
-    syncQueriesMessage: {
-      queries: [],
-      device: "ios",
-    },
-    setSyncQueriesMessage: () => {},
   });
 }

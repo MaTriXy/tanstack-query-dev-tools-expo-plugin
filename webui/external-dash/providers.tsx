@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { useSyncQueriesWeb } from "./useSyncQueriesWeb";
+
 export default function Providers({ children }: any) {
   const [queryClient] = useState(
     () =>
@@ -10,6 +12,7 @@ export default function Providers({ children }: any) {
         defaultOptions: {},
       })
   );
+  useSyncQueriesWeb({ queryClient });
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

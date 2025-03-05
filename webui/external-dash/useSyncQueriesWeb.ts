@@ -7,7 +7,7 @@ interface Props {
   queryClient: QueryClient;
 }
 
-export function useSyncQueries({ queryClient }: Props) {
+export function useSyncQueriesWeb({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
@@ -17,6 +17,7 @@ export function useSyncQueries({ queryClient }: Props) {
       console.log("no client");
       return;
     }
+    console.log("client is connected");
 
     // Subscribe to cache changes
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
