@@ -1,12 +1,17 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, hydrate } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
-import { Platform } from "react-native";
 
 interface Props {
   queryClient: QueryClient;
 }
 
+interface SyncMessage {
+  type: "dehydrated-state";
+  state: unknown;
+}
+
+// This hook runs on the web side to receive data from mobile
 export function useSyncQueriesWeb({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
@@ -17,45 +22,30 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
       console.log("no client");
       return;
     }
-    console.log("client is connected");
-
-    // Subscribe to cache changes
-    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event.type === "updated" && event.query) {
-        console.log("outgoing query", event);
-        client.sendMessage("query-sync", {
-          type: "query",
-          action: "updated",
-          device: Platform.OS,
-          query: {
-            queryHash: event.query.queryHash,
-            queryKey: event.query.queryKey,
-            state: event.query.state,
-          },
-        });
-      }
-    });
+    console.log("web client connected, will receive from expo");
 
     // Handle incoming sync messages
     const subscription = client.addMessageListener(
       "query-sync",
-      (message: any) => {
-        if (
-          message.type === "query" &&
-          message.action === "updated" &&
-          message.device !== Platform.OS // Prevent echo
-        ) {
-          console.log("incoming query", message);
-          queryClient.setQueryData(
-            message.query.queryKey,
-            message.query.state.data
-          );
+      (message: SyncMessage) => {
+        if (message.type === "dehydrated-state") {
+          console.log("web received dehydrated state from expo");
+
+          // Hydrate the incoming state
+          hydrate(queryClient, message.state, {
+            defaultOptions: {
+              queries: {
+                // Prevent refetching when hydrating
+                // @ts-expect-error - Prevent refetching when hydrating this is a valid type hopefully
+                staleTime: Infinity,
+              },
+            },
+          });
         }
       }
     );
 
     return () => {
-      unsubscribe();
       subscription?.remove();
     };
   }, [queryClient, client]);

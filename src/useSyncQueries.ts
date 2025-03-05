@@ -1,12 +1,17 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
-import { Platform } from "react-native";
 
 interface Props {
   queryClient: QueryClient;
 }
 
+interface SyncMessage {
+  type: "dehydrated-state";
+  state: unknown;
+}
+
+// This hook runs on the Expo/mobile side to send data to web
 export function useSyncQueries({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
@@ -17,45 +22,27 @@ export function useSyncQueries({ queryClient }: Props) {
       console.log("no client");
       return;
     }
+    console.log("expo client connected, will sync to web");
 
     // Subscribe to cache changes
-    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event.type === "updated" && event.query) {
-        console.log("outgoing query", event);
-        client.sendMessage("query-sync", {
-          type: "query",
-          action: "updated",
-          device: Platform.OS,
-          query: {
-            queryHash: event.query.queryHash,
-            queryKey: event.query.queryKey,
-            state: event.query.state,
-          },
-        });
-      }
-    });
+    const unsubscribe = queryClient.getQueryCache().subscribe(() => {
+      // Dehydrate the current state
+      const dehydratedState = dehydrate(queryClient, {
+        shouldDehydrateQuery: () => true, // Include all queries
+        shouldDehydrateMutation: () => true, // Include all mutations
+      });
 
-    // Handle incoming sync messages
-    const subscription = client.addMessageListener(
-      "query-sync",
-      (message: any) => {
-        if (
-          message.type === "query" &&
-          message.action === "updated" &&
-          message.device !== Platform.OS // Prevent echo
-        ) {
-          console.log("incoming query", message);
-          queryClient.setQueryData(
-            message.query.queryKey,
-            message.query.state.data
-          );
-        }
-      }
-    );
+      const syncMessage: SyncMessage = {
+        type: "dehydrated-state",
+        state: dehydratedState,
+      };
+
+      console.log("expo sending dehydrated state to web");
+      client.sendMessage("query-sync", syncMessage);
+    });
 
     return () => {
       unsubscribe();
-      subscription?.remove();
     };
   }, [queryClient, client]);
 
