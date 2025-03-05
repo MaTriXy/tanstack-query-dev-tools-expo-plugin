@@ -1,17 +1,23 @@
-import { QueryClient, hydrate } from "@tanstack/react-query";
+import { QueryClient, hydrate, QueryObserver } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 
 interface Props {
   queryClient: QueryClient;
 }
 
+interface ObserverState {
+  queryHash: string;
+  options: any;
+}
+
 interface SyncMessage {
   type: "dehydrated-state";
   state: unknown;
+  observers: ObserverState[];
 }
 
-// This hook runs on the web side to receive data from mobile
 export function useSyncQueriesWeb({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
@@ -24,22 +30,49 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
     }
     console.log("web client connected, will receive from expo");
 
-    // Handle incoming sync messages
     const subscription = client.addMessageListener(
       "query-sync",
       (message: SyncMessage) => {
         if (message.type === "dehydrated-state") {
           console.log("web received dehydrated state from expo");
 
-          // Hydrate the incoming state
+          // First, clean up existing observers
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .forEach((query) => {
+              // @ts-ignore - accessing private property
+              const observers = [...query.observers];
+              observers.forEach((observer) => {
+                // @ts-ignore - accessing private method
+                query.removeObserver(observer);
+              });
+            });
+
+          // Then hydrate the state
           hydrate(queryClient, message.state, {
             defaultOptions: {
               queries: {
-                // Prevent refetching when hydrating
-                // @ts-expect-error - Prevent refetching when hydrating this is a valid type hopefully
+                // @ts-ignore - accessing private property
                 staleTime: Infinity,
               },
             },
+          });
+
+          // Finally, recreate observers
+          message.observers.forEach((observerState) => {
+            const query = queryClient
+              .getQueryCache()
+              .get(observerState.queryHash);
+            if (query) {
+              const observer = new QueryObserver(
+                queryClient,
+                observerState.options
+              );
+
+              // @ts-ignore - accessing private method
+              query.addObserver(observer);
+            }
           });
         }
       }

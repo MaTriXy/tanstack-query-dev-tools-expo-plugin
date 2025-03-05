@@ -1,17 +1,23 @@
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 
 interface Props {
   queryClient: QueryClient;
 }
 
+interface ObserverState {
+  queryHash: string;
+  options: any;
+}
+
 interface SyncMessage {
   type: "dehydrated-state";
   state: unknown;
+  observers: ObserverState[];
 }
 
-// This hook runs on the Expo/mobile side to send data to web
 export function useSyncQueries({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
@@ -24,20 +30,35 @@ export function useSyncQueries({ queryClient }: Props) {
     }
     console.log("expo client connected, will sync to web");
 
-    // Subscribe to cache changes
     const unsubscribe = queryClient.getQueryCache().subscribe(() => {
+      // Get all queries
+      const queries = queryClient.getQueryCache().findAll();
+
+      // Extract observer states
+      const observerStates: ObserverState[] = [];
+      queries.forEach((query) => {
+        query.observers.forEach((observer) => {
+          observerStates.push({
+            queryHash: query.queryHash,
+            // @ts-ignore - accessing private options
+            options: observer.options,
+          });
+        });
+      });
+
       // Dehydrate the current state
       const dehydratedState = dehydrate(queryClient, {
-        shouldDehydrateQuery: () => true, // Include all queries
-        shouldDehydrateMutation: () => true, // Include all mutations
+        shouldDehydrateQuery: () => true,
+        shouldDehydrateMutation: () => true,
       });
 
       const syncMessage: SyncMessage = {
         type: "dehydrated-state",
         state: dehydratedState,
+        observers: observerStates,
       };
 
-      console.log("expo sending dehydrated state to web");
+      console.log("expo sending dehydrated state and observers to web");
       client.sendMessage("query-sync", syncMessage);
     });
 
