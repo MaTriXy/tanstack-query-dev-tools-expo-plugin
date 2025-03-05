@@ -12,10 +12,23 @@ interface ObserverState {
   options: any;
 }
 
+interface QueryStatusState {
+  queryHash: string;
+  state: {
+    status: string;
+    fetchStatus: string;
+    isInvalidated: boolean;
+    isPaused: boolean;
+    isStale: boolean;
+    dataUpdatedAt: number;
+  };
+}
+
 interface SyncMessage {
   type: "dehydrated-state";
   state: unknown;
   observers: ObserverState[];
+  queryStatuses: QueryStatusState[];
 }
 
 export function useSyncQueries({ queryClient }: Props) {
@@ -36,13 +49,29 @@ export function useSyncQueries({ queryClient }: Props) {
 
       // Extract observer states
       const observerStates: ObserverState[] = [];
+      const queryStatuses: QueryStatusState[] = [];
+
       queries.forEach((query) => {
+        // Collect observers
         query.observers.forEach((observer) => {
           observerStates.push({
             queryHash: query.queryHash,
             // @ts-ignore - accessing private options
             options: observer.options,
           });
+        });
+
+        // Collect status information
+        queryStatuses.push({
+          queryHash: query.queryHash,
+          state: {
+            status: query.state.status,
+            fetchStatus: query.state.fetchStatus,
+            isInvalidated: query.state.isInvalidated,
+            isPaused: query.state.fetchStatus === "paused",
+            isStale: query.isStale(),
+            dataUpdatedAt: query.state.dataUpdatedAt,
+          },
         });
       });
 
@@ -56,9 +85,12 @@ export function useSyncQueries({ queryClient }: Props) {
         type: "dehydrated-state",
         state: dehydratedState,
         observers: observerStates,
+        queryStatuses,
       };
 
-      console.log("expo sending dehydrated state and observers to web");
+      console.log(
+        "expo sending dehydrated state, observers, and statuses to web"
+      );
       client.sendMessage("query-sync", syncMessage);
     });
 

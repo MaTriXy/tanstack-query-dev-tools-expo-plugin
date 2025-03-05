@@ -12,10 +12,23 @@ interface ObserverState {
   options: any;
 }
 
+interface QueryStatusState {
+  queryHash: string;
+  state: {
+    status: string;
+    fetchStatus: string;
+    isInvalidated: boolean;
+    isPaused: boolean;
+    isStale: boolean;
+    dataUpdatedAt: number;
+  };
+}
+
 interface SyncMessage {
   type: "dehydrated-state";
   state: unknown;
   observers: ObserverState[];
+  queryStatuses: QueryStatusState[];
 }
 
 export function useSyncQueriesWeb({ queryClient }: Props) {
@@ -59,7 +72,7 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
             },
           });
 
-          // Finally, recreate observers
+          // Recreate observers
           message.observers.forEach((observerState) => {
             const query = queryClient
               .getQueryCache()
@@ -72,6 +85,21 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
 
               // @ts-ignore - accessing private method
               query.addObserver(observer);
+            }
+          });
+
+          // Update query statuses
+          message.queryStatuses.forEach((statusState) => {
+            const query = queryClient
+              .getQueryCache()
+              .get(statusState.queryHash);
+            if (query) {
+              // @ts-ignore - accessing private property
+              Object.assign(query.state, statusState.state);
+
+              // Force a cache update to trigger UI updates
+              // @ts-expect-error - accessing private method
+              queryClient.getQueryCache().notify({ query });
             }
           });
         }
