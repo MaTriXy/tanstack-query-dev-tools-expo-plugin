@@ -1,34 +1,39 @@
-import { QueryClient, dehydrate } from "@tanstack/react-query";
+import {
+  DefaultError,
+  DehydratedState,
+  QueryClient,
+  QueryKey,
+  QueryObserverOptions,
+  dehydrate,
+} from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
-import { Platform } from "react-native";
 
 interface Props {
   queryClient: QueryClient;
 }
 
-interface ObserverState {
+interface ObserverState<
+  TQueryFnData = unknown,
+  TError = DefaultError,
+  TData = TQueryFnData,
+  TQueryData = TQueryFnData,
+  TQueryKey extends QueryKey = QueryKey,
+> {
   queryHash: string;
-  options: any;
-}
-
-interface QueryStatusState {
-  queryHash: string;
-  state: {
-    status: string;
-    fetchStatus: string;
-    isInvalidated: boolean;
-    isPaused: boolean;
-    isStale: boolean;
-    dataUpdatedAt: number;
-  };
+  options: QueryObserverOptions<
+    TQueryFnData,
+    TError,
+    TData,
+    TQueryData,
+    TQueryKey
+  >;
 }
 
 interface SyncMessage {
   type: "dehydrated-state";
-  state: unknown;
+  state: DehydratedState;
   observers: ObserverState[];
-  queryStatuses: QueryStatusState[];
 }
 
 export function useSyncQueries({ queryClient }: Props) {
@@ -41,60 +46,55 @@ export function useSyncQueries({ queryClient }: Props) {
       console.log("no client");
       return;
     }
-    console.log("expo client connected, will sync to web");
+    console.log("Connected");
 
+    // Handle updates from web -----
+    // const webUpdateSubscription = client.addMessageListener(
+    //   "query-update-from-web",
+    //   (message: { type: string; queryData: any }) => {
+    //     if (message.type === "query-update") {
+    //       const { queryHash, queryKey, state } = message.queryData;
+
+    //       const query = queryClient.getQueryCache().get(queryHash);
+    //       if (query) {
+    //         queryClient.setQueryData(queryKey, state.data);
+    //       }
+    //     }
+    //   }
+    // );
+
+    // Subscribe to query changes
     const unsubscribe = queryClient.getQueryCache().subscribe(() => {
       // Get all queries
       const queries = queryClient.getQueryCache().findAll();
-
       // Extract observer states
       const observerStates: ObserverState[] = [];
-      const queryStatuses: QueryStatusState[] = [];
-
+      // Collect observers
       queries.forEach((query) => {
-        // Collect observers
         query.observers.forEach((observer) => {
           observerStates.push({
             queryHash: query.queryHash,
-            // @ts-ignore - accessing private options
             options: observer.options,
           });
         });
-
-        // Collect status information
-        queryStatuses.push({
-          queryHash: query.queryHash,
-          state: {
-            status: query.state.status,
-            fetchStatus: query.state.fetchStatus,
-            isInvalidated: query.state.isInvalidated,
-            isPaused: query.state.fetchStatus === "paused",
-            isStale: query.isStale(),
-            dataUpdatedAt: query.state.dataUpdatedAt,
-          },
-        });
       });
-
       // Dehydrate the current state
       const dehydratedState = dehydrate(queryClient, {
         shouldDehydrateQuery: () => true,
         shouldDehydrateMutation: () => true,
       });
-
+      // Create sync message
       const syncMessage: SyncMessage = {
         type: "dehydrated-state",
         state: dehydratedState,
         observers: observerStates,
-        queryStatuses,
       };
-
-      console.log(
-        "expo sending dehydrated state, observers, and statuses to web"
-      );
+      // Send message to web
       client.sendMessage("query-sync", syncMessage);
     });
 
     return () => {
+      // webUpdateSubscription?.remove();
       unsubscribe();
     };
   }, [queryClient, client]);

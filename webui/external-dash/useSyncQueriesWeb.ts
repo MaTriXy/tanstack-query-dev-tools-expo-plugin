@@ -1,34 +1,41 @@
-import { QueryClient, hydrate, QueryObserver } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryObserver,
+  DehydratedState,
+  QueryObserverOptions,
+  QueryKey,
+  DefaultError,
+} from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
-import { Platform } from "react-native";
+
+import { customHydrate } from "./hydration";
 
 interface Props {
   queryClient: QueryClient;
 }
 
-interface ObserverState {
+interface ObserverState<
+  TQueryFnData = unknown,
+  TError = DefaultError,
+  TData = TQueryFnData,
+  TQueryData = TQueryFnData,
+  TQueryKey extends QueryKey = QueryKey,
+> {
   queryHash: string;
-  options: any;
-}
-
-interface QueryStatusState {
-  queryHash: string;
-  state: {
-    status: string;
-    fetchStatus: string;
-    isInvalidated: boolean;
-    isPaused: boolean;
-    isStale: boolean;
-    dataUpdatedAt: number;
-  };
+  options: QueryObserverOptions<
+    TQueryFnData,
+    TError,
+    TData,
+    TQueryData,
+    TQueryKey
+  >;
 }
 
 interface SyncMessage {
   type: "dehydrated-state";
-  state: unknown;
+  state: DehydratedState;
   observers: ObserverState[];
-  queryStatuses: QueryStatusState[];
 }
 
 export function useSyncQueriesWeb({ queryClient }: Props) {
@@ -38,70 +45,21 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
 
   useEffect(() => {
     if (!client) {
-      console.log("no client");
+      console.log("No client");
       return;
     }
-    console.log("web client connected, will receive from expo");
+    console.log("Connected");
 
     const subscription = client.addMessageListener(
       "query-sync",
       (message: SyncMessage) => {
         if (message.type === "dehydrated-state") {
-          console.log("web received dehydrated state from expo");
-
-          // First, clean up existing observers
-          queryClient
-            .getQueryCache()
-            .getAll()
-            .forEach((query) => {
-              // @ts-ignore - accessing private property
-              const observers = [...query.observers];
-              observers.forEach((observer) => {
-                // @ts-ignore - accessing private method
-                query.removeObserver(observer);
-              });
-            });
-
-          // Then hydrate the state
-          hydrate(queryClient, message.state, {
-            defaultOptions: {
-              queries: {
-                // @ts-ignore - accessing private property
-                staleTime: Infinity,
-              },
-            },
-          });
-
+          // Clean up observers
+          cleanUpObservers(queryClient);
+          // Hydrate sets initial data state
+          hydrateState(queryClient, message);
           // Recreate observers
-          message.observers.forEach((observerState) => {
-            const query = queryClient
-              .getQueryCache()
-              .get(observerState.queryHash);
-            if (query) {
-              const observer = new QueryObserver(
-                queryClient,
-                observerState.options
-              );
-
-              // @ts-ignore - accessing private method
-              query.addObserver(observer);
-            }
-          });
-
-          // Update query statuses
-          message.queryStatuses.forEach((statusState) => {
-            const query = queryClient
-              .getQueryCache()
-              .get(statusState.queryHash);
-            if (query) {
-              // @ts-ignore - accessing private property
-              Object.assign(query.state, statusState.state);
-
-              // Force a cache update to trigger UI updates
-              // @ts-expect-error - accessing private method
-              queryClient.getQueryCache().notify({ query });
-            }
-          });
+          recreateObservers(queryClient, message);
         }
       }
     );
@@ -112,4 +70,39 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
   }, [queryClient, client]);
 
   return { isConnected: !!client };
+}
+
+// Clean up existing observers
+function cleanUpObservers(queryClient: QueryClient) {
+  queryClient
+    .getQueryCache()
+    .getAll()
+    .forEach((query) => {
+      const observers = query.observers;
+      observers.forEach((observer) => {
+        query.removeObserver(observer);
+      });
+    });
+}
+// Recreate observers
+function recreateObservers(queryClient: QueryClient, message: SyncMessage) {
+  message.observers.forEach((observerState) => {
+    const query = queryClient.getQueryCache().get(observerState.queryHash);
+    if (query) {
+      const observer = new QueryObserver(queryClient, observerState.options);
+      query.addObserver(observer);
+    }
+  });
+}
+// Hydrate sets initial data state
+function hydrateState(queryClient: QueryClient, message: SyncMessage) {
+  console.log("hydrateState");
+  customHydrate(queryClient, message.state, {
+    defaultOptions: {
+      queries: {
+        // @ts-ignore  accessing private property
+        staleTime: Infinity,
+      },
+    },
+  });
 }

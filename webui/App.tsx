@@ -1,8 +1,5 @@
-import { Query, QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useDevToolsPluginClient, type EventSubscription } from "expo/devtools";
-import React, { useEffect, useState } from "react";
-
+import { useDevToolsPluginClient } from "expo/devtools";
 import "./index.css";
 import { View, Text } from "react-native";
 
@@ -24,10 +21,9 @@ export default function App() {
           backgroundColor: client ? "lightgreen" : "lightcoral",
         }}
       >
-        <Text>Connected</Text>
+        <Text>{client ? "Connected" : "Disconnected"}</Text>
       </View>
-      {/* <ExternalDevTools users={users} /> */}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen />
     </Providers>
   );
 }
