@@ -34,28 +34,29 @@ export function customHydrate(
   const deserializeData =
     options?.defaultOptions?.deserializeData ?? defaultTransformerFn;
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const mutations = (dehydratedState as DehydratedState).mutations || [];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const queries = (dehydratedState as DehydratedState).queries || [];
+
+  mutations.forEach(({ state, ...mutationOptions }) => {
+    mutationCache.build(
+      client,
+      {
+        ...client.getDefaultOptions().hydrate?.mutations,
+        ...options?.defaultOptions?.mutations,
+        ...mutationOptions,
+      },
+      state
+    );
+  });
 
   queries.forEach(({ queryKey, state, queryHash, meta, promise }) => {
     let query = queryCache.get(queryHash);
-
-    // Log current live state
-    console.log("Current live state for", queryHash, {
-      fetchStatus: query?.state.fetchStatus,
-      status: query?.state.status,
-      dataUpdatedAt: query?.state.dataUpdatedAt,
-    });
-
-    // Log incoming hydration state
-    console.log("Incoming hydration state for", queryHash, {
-      fetchStatus: state.fetchStatus,
-      status: state.status,
-      dataUpdatedAt: state.dataUpdatedAt,
-    });
-
     const data =
       state.data === undefined ? state.data : deserializeData(state.data);
 
+    // Do not hydrate if an existing query exists with newer data
     if (query) {
       if (
         query.state.dataUpdatedAt < state.dataUpdatedAt ||
@@ -67,6 +68,7 @@ export function customHydrate(
         });
       }
     } else {
+      // Restore query
       query = queryCache.build(
         client,
         {
@@ -83,12 +85,15 @@ export function customHydrate(
       );
     }
 
-    // Log final state after hydration
-    console.log("Final state after hydration for", queryHash, {
-      fetchStatus: query.state.fetchStatus,
-      status: query.state.status,
-      dataUpdatedAt: query.state.dataUpdatedAt,
-    });
+    if (promise) {
+      // Note: `Promise.resolve` required cause
+      // RSC transformed promises are not thenable
+      const initialPromise = Promise.resolve(promise).then(deserializeData);
+
+      // this doesn't actually fetch - it just creates a retryer
+      // which will re-use the passed `initialPromise`
+      void query.fetch(undefined, { initialPromise });
+    }
   });
 }
 
