@@ -35,18 +35,18 @@ export function useSyncQueries({ queryClient }: Props) {
       }
     );
     // Handle updates from web -----
-    const webUpdateSubscription = client.addMessageListener(
-      "query-update-from-web",
-      (message: { type: string; queryData: any }) => {
-        if (message.type === "query-update") {
-          const { queryHash, queryKey, state } = message.queryData;
-          const query = queryClient.getQueryCache().get(queryHash);
-          if (query) {
-            queryClient.setQueryData(queryKey, state.data);
-          }
-        }
-      }
-    );
+    // const webUpdateSubscription = client.addMessageListener(
+    //   "query-update-from-web",
+    //   (message: { type: string; queryData: any }) => {
+    //     if (message.type === "query-update") {
+    //       const { queryHash, queryKey, state } = message.queryData;
+    //       const query = queryClient.getQueryCache().get(queryHash);
+    //       if (query) {
+    //         queryClient.setQueryData(queryKey, state.data);
+    //       }
+    //     }
+    //   }
+    // );
     // Subscribe to query changes
     const unsubscribe = queryClient.getQueryCache().subscribe(() => {
       // Dehydrate the current state
