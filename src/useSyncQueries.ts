@@ -31,7 +31,7 @@ interface ObserverState<
   >;
 }
 
-interface SyncMessage {
+export interface SyncMessage {
   type: "dehydrated-state";
   state: DehydratedState;
   observers: ObserverState[];

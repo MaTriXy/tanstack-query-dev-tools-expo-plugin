@@ -1,41 +1,11 @@
-import {
-  QueryClient,
-  QueryObserver,
-  DehydratedState,
-  QueryObserverOptions,
-  QueryKey,
-  DefaultError,
-} from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
 import { customHydrate } from "./hydration";
-
+import { SyncMessage } from "../../src/useSyncQueries";
 interface Props {
   queryClient: QueryClient;
-}
-
-interface ObserverState<
-  TQueryFnData = unknown,
-  TError = DefaultError,
-  TData = TQueryFnData,
-  TQueryData = TQueryFnData,
-  TQueryKey extends QueryKey = QueryKey,
-> {
-  queryHash: string;
-  options: QueryObserverOptions<
-    TQueryFnData,
-    TError,
-    TData,
-    TQueryData,
-    TQueryKey
-  >;
-}
-
-interface SyncMessage {
-  type: "dehydrated-state";
-  state: DehydratedState;
-  observers: ObserverState[];
 }
 
 export function useSyncQueriesWeb({ queryClient }: Props) {
