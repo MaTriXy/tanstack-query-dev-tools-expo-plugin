@@ -3,6 +3,7 @@ import { useDevToolsPluginClient } from "expo/devtools";
 import "./index.css";
 import { View, Text } from "react-native";
 
+import Test from "./external-dash/Test";
 import Providers from "./external-dash/providers";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         }}
       >
         <Text>{client ? "Connected" : "Disconnected"}</Text>
+        <Test />
       </View>
       <ReactQueryDevtools initialIsOpen />
     </Providers>

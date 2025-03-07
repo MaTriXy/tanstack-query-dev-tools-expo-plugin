@@ -21,9 +21,9 @@ For bare React Native projects, you must ensure that you have [installed and con
 npm install tanstack-query-dev-tools-expo-plugin
 ```
 
-
-
-
 # Contributing
 
-Contributions are very welcome! Please refer to guidelines described in the [contributing guide]( https://github.com/expo/expo#contributing).
+Contributions are very welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).
+
+npm run web:dev
+npm all

@@ -96,7 +96,6 @@ function recreateObservers(queryClient: QueryClient, message: SyncMessage) {
 }
 // Hydrate sets initial data state
 function hydrateState(queryClient: QueryClient, message: SyncMessage) {
-  console.log("hydrateState");
   customHydrate(queryClient, message.state, {
     defaultOptions: {
       queries: {

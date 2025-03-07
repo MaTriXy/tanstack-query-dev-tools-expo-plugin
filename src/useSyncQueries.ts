@@ -4,10 +4,11 @@ import {
   QueryClient,
   QueryKey,
   QueryObserverOptions,
-  dehydrate,
 } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
+
+import { customerDehydrate } from "./_util/hydration";
 
 interface Props {
   queryClient: QueryClient;
@@ -79,10 +80,7 @@ export function useSyncQueries({ queryClient }: Props) {
         });
       });
       // Dehydrate the current state
-      const dehydratedState = dehydrate(queryClient, {
-        shouldDehydrateQuery: () => true,
-        shouldDehydrateMutation: () => true,
-      });
+      const dehydratedState = customerDehydrate(queryClient);
       // Create sync message
       const syncMessage: SyncMessage = {
         type: "dehydrated-state",

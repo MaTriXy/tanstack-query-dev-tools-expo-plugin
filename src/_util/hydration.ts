@@ -38,33 +38,21 @@ export function customHydrate(
   const mutations = (dehydratedState as DehydratedState).mutations || [];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const queries = (dehydratedState as DehydratedState).queries || [];
-  // Sync mutations
+
+  // Clear all mutations before hydrating
+  // mutationCache.clear();
+
   mutations.forEach(({ state, ...mutationOptions }) => {
-    const existingMutation = mutationCache
-      .getAll()
-      .find(
-        (mutation) =>
-          mutation.mutationId ===
-          (mutationOptions as { mutationId: number }).mutationId
-      );
-
-    if (existingMutation) {
-      existingMutation.state = state;
-    } else {
-      mutationCache.build(
-        client,
-        {
-          ...client.getDefaultOptions().hydrate?.mutations,
-          ...options?.defaultOptions?.mutations,
-          ...mutationOptions,
-        },
-        state
-      );
-    }
+    mutationCache.build(
+      client,
+      {
+        ...client.getDefaultOptions().hydrate?.mutations,
+        ...options?.defaultOptions?.mutations,
+        ...mutationOptions,
+      },
+      state
+    );
   });
-
-  // @ts-expect-error - Refresh mutation state
-  mutationCache.notify({ type: "observerResultsUpdated" });
 
   queries.forEach(({ queryKey, state, queryHash, meta, promise }) => {
     let query = queryCache.get(queryHash);
@@ -107,8 +95,7 @@ export function customHydrate(
 
       // this doesn't actually fetch - it just creates a retryer
       // which will re-use the passed `initialPromise`
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      query.fetch(undefined, { initialPromise });
+      void query.fetch(undefined, { initialPromise });
     }
   });
 }
@@ -140,14 +127,6 @@ export interface HydrateOptions {
   };
 }
 
-interface DehydratedMutation {
-  mutationId: number;
-  mutationKey?: MutationKey;
-  state: MutationState;
-  meta?: MutationMeta;
-  scope?: MutationScope;
-}
-
 interface DehydratedQuery {
   queryHash: string;
   queryKey: QueryKey;
@@ -160,7 +139,13 @@ export interface DehydratedState {
   mutations: DehydratedMutation[];
   queries: DehydratedQuery[];
 }
-
+interface DehydratedMutation {
+  mutationId: number;
+  mutationKey?: MutationKey;
+  state: MutationState;
+  meta?: MutationMeta;
+  scope?: MutationScope;
+}
 // FUNCTIONS
 
 function dehydrateMutation(mutation: Mutation): DehydratedMutation {
