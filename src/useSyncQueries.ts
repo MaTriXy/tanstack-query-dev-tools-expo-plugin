@@ -22,7 +22,18 @@ export function useSyncQueries({ queryClient }: Props) {
       return;
     }
     console.log("Connected");
-
+    // Handle initial state requests from web
+    const initialStateSubscription = client.addMessageListener(
+      "request-initial-state",
+      () => {
+        const dehydratedState = Dehydrate(queryClient as any);
+        const syncMessage: SyncMessage = {
+          type: "dehydrated-state",
+          state: dehydratedState,
+        };
+        client.sendMessage("query-sync", syncMessage);
+      }
+    );
     // Handle updates from web -----
     const webUpdateSubscription = client.addMessageListener(
       "query-update-from-web",
@@ -51,6 +62,7 @@ export function useSyncQueries({ queryClient }: Props) {
 
     return () => {
       // webUpdateSubscription?.remove();
+      initialStateSubscription?.remove();
       unsubscribe();
     };
   }, [queryClient, client]);

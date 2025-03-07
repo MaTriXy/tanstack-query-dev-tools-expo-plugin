@@ -2,8 +2,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
-import { Hydrate } from "../src/hydration";
-import { SyncMessage } from "../src/types";
+// Update the import path to use the configured alias
+import { Hydrate } from "src/hydration";
+import { SyncMessage } from "src/types";
 interface Props {
   queryClient: QueryClient;
 }
@@ -19,7 +20,10 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
       return;
     }
     console.log("Connected");
-
+    // Request initial state when web client connects
+    client.sendMessage("request-initial-state", {
+      type: "initial-state-request",
+    });
     // log out events fetch, query data updates , etc
     // queryClient.getQueryCache().subscribe((event) => {
     //   switch (event.type) {
