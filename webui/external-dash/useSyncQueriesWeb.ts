@@ -59,7 +59,11 @@ function recreateObservers(queryClient: QueryClient, message: SyncMessage) {
   message.observers.forEach((observerState) => {
     const query = queryClient.getQueryCache().get(observerState.queryHash);
     if (query) {
-      const observer = new QueryObserver(queryClient, observerState.options);
+      // Cast the options to any to bypass the type incompatibility
+      const observer = new QueryObserver(
+        queryClient,
+        observerState.options as any
+      );
       query.addObserver(observer);
     }
   });
@@ -69,9 +73,8 @@ function hydrateState(queryClient: QueryClient, message: SyncMessage) {
   customHydrate(queryClient, message.state, {
     defaultOptions: {
       queries: {
-        // @ts-ignore  accessing private property
         staleTime: Infinity,
-      },
+      } as any,
     },
   });
 }
