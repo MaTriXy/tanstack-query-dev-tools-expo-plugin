@@ -2,9 +2,8 @@ import { QueryClient, QueryOptions } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
-// Update the import path to use the configured alias
-import { Hydrate } from "src/hydration";
-import { SyncMessage } from "src/types";
+import { Hydrate } from "./shared/hydration";
+import { SyncMessage } from "./shared/types";
 
 // Recreate the internal FetchMeta interface
 interface FetchMeta {
