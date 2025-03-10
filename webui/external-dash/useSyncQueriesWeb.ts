@@ -1,10 +1,20 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryOptions } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
 // Update the import path to use the configured alias
 import { Hydrate } from "src/hydration";
 import { SyncMessage } from "src/types";
+
+// Recreate the internal FetchMeta interface
+interface FetchMeta {
+  fetchMore?: { direction: "forward" | "backward" };
+}
+// Extend it with the devtools-specific properties
+interface ExtendedFetchMeta extends FetchMeta {
+  __previousQueryOptions?: QueryOptions<unknown, Error, unknown>;
+}
+
 interface Props {
   queryClient: QueryClient;
 }
@@ -77,7 +87,7 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
     // });
     queryClient.getQueryCache().subscribe((event) => {
       switch (event.type) {
-        case "removed":
+        case "removed": // Works
           // Remove button clicked
           console.log("Query removed", {
             queryKey: event.query.queryKey,
@@ -101,7 +111,6 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
                 );
               }
               break;
-
             case "invalidate":
               // Invalidate button clicked
               console.log("Invalidate clicked", {
@@ -109,21 +118,79 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
                 queryHash: event.query.queryHash,
               });
               break;
+            case "setState": {
+              console.log("setState Debug:", {
+                // Previous state
+                previousStateHadError: event.query.state.error !== null,
 
-            case "setState":
-              // Could be Reset or Restore Error button
-              const hasError = event.query.state.error !== null;
-              const isReset = event.query.state.data === undefined && !hasError;
+                // Current action state
+                actionState: {
+                  error: event.action.state.error,
+                  status: event.action.state.status,
+                  fetchStatus: event.action.state.fetchStatus,
+                  fetchMeta: event.action.state.fetchMeta,
+                },
 
-              if (isReset) {
+                // Query state
+                queryState: {
+                  error: event.query.state.error,
+                  status: event.query.state.status,
+                  fetchStatus: event.query.state.fetchStatus,
+                  dataUpdateCount: event.query.state.dataUpdateCount,
+                  errorUpdateCount: event.query.state.errorUpdateCount,
+                },
+
+                // Full event for reference
+                fullEvent: event,
+              });
+              // Could be Reset, Trigger Error or Restore Error button
+              const isReset =
+                event.query.state.dataUpdateCount === 0 &&
+                event.query.state.errorUpdateCount === 0 &&
+                event.query.state.fetchStatus === "idle";
+
+              // Trigger Error sets both error and __previousQueryOptions
+              const triggerErrorClicked =
+                event.action.state.error !== null &&
+                (event.action.state.fetchMeta as ExtendedFetchMeta)
+                  ?.__previousQueryOptions !== undefined;
+
+              // For Restore Error:
+              // - Query state has error (state.status === 'error')
+              // - Action transitions to pending status with null error
+              const restoreErrorClicked =
+                event.query.state.status === "error" &&
+                event.action.state.status === "pending" &&
+                event.action.state.error === null &&
+                event.action.state.fetchStatus === "idle";
+
+              if (triggerErrorClicked) {
+                // works
+                console.log("Trigger Error clicked", {
+                  queryKey: event.query.queryKey,
+                  queryHash: event.query.queryHash,
+                });
+              } else if (restoreErrorClicked) {
+                console.log("Restore Error clicked", {
+                  queryKey: event.query.queryKey,
+                  queryHash: event.query.queryHash,
+                });
+              } else if (isReset) {
                 console.log("Reset clicked", {
                   queryKey: event.query.queryKey,
                   queryHash: event.query.queryHash,
                 });
-              } else if (hasError) {
-                console.log("Restore Error clicked", {
-                  queryKey: event.query.queryKey,
+              }
+              break;
+            }
+            case "success":
+              // works
+              if (event.action.manual) {
+                // Send manualquery update to client
+                client.sendMessage("query-manual-update", {
                   queryHash: event.query.queryHash,
+                  queryKey: event.query.queryKey,
+                  data: event.query.state.data,
                 });
               }
               break;

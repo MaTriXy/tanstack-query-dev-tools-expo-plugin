@@ -83,6 +83,11 @@ export function Hydrate(
             queryKey,
             queryHash,
             meta,
+            queryFn: () => {
+              console.log("Refetch Pressed");
+              // Return a never-resolving promise to stay in fetching state
+              return new Promise(() => {});
+            },
           },
           {
             ...state,
@@ -92,6 +97,7 @@ export function Hydrate(
       }
       cleanUpObservers(query);
       recreateObserver(client, observers, query);
+
       if (promise) {
         // Note: `Promise.resolve` required cause
         // RSC transformed promises are not thenable

@@ -1,12 +1,16 @@
+import type { QueryCacheNotifyEvent, QueryKey } from "@tanstack/query-core";
 import { QueryClient } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
 import { Dehydrate } from "./hydration";
 import { SyncMessage } from "./types";
-
 // Use type-only imports to prevent runtime dependencies
-
+interface QueryUpdateMessage {
+  queryHash: string;
+  queryKey: QueryKey;
+  data: unknown;
+}
 interface Props {
   queryClient: QueryClient;
 }
@@ -34,19 +38,35 @@ export function useSyncQueries({ queryClient }: Props) {
         client.sendMessage("query-sync", syncMessage);
       }
     );
-    // Handle updates from web -----
-    // const webUpdateSubscription = client.addMessageListener(
-    //   "query-update-from-web",
-    //   (message: { type: string; queryData: any }) => {
-    //     if (message.type === "query-update") {
-    //       const { queryHash, queryKey, state } = message.queryData;
-    //       const query = queryClient.getQueryCache().get(queryHash);
-    //       if (query) {
-    //         queryClient.setQueryData(queryKey, state.data);
-    //       }
-    //     }
-    //   }
-    // );
+    // Get manual updates from web
+    const manualUpdateSubscription = client.addMessageListener(
+      "query-manual-update",
+      (message: QueryUpdateMessage) => {
+        console.log("Manual update received", message);
+        const { queryHash, queryKey, data } = message;
+
+        // Verify the query exists
+        const query = queryClient.getQueryCache().get(queryHash);
+        if (!query) {
+          console.warn(`Query with hash ${queryHash} not found`);
+          return;
+        }
+
+        // Update the query data
+        queryClient.setQueryData(queryKey, data, {
+          updatedAt: Date.now(), // Ensure the cache recognizes this as a fresh update
+        });
+
+        // Verify the update
+        const updatedQuery = queryClient.getQueryCache().get(queryHash);
+        console.log("Query after update:", {
+          queryKey,
+          data: updatedQuery?.state.data,
+          updatedAt: updatedQuery?.state.dataUpdatedAt,
+        });
+      }
+    );
+
     // Subscribe to query changes
     const unsubscribe = queryClient.getQueryCache().subscribe(() => {
       // Dehydrate the current state
@@ -61,7 +81,7 @@ export function useSyncQueries({ queryClient }: Props) {
     });
 
     return () => {
-      // webUpdateSubscription?.remove();
+      manualUpdateSubscription?.remove();
       initialStateSubscription?.remove();
       unsubscribe();
     };
