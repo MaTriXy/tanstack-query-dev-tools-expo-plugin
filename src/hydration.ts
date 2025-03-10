@@ -126,7 +126,12 @@ function recreateObserver(
   query: Query
 ) {
   observers.forEach((observerState) => {
-    const observer = new QueryObserver(queryClient, observerState.options);
+    // Create a new options object without the unwanted properties
+    const cleanedOptions = { ...observerState.options };
+    // @ts-ignore - This prevents infinite queries from being refetched in dev tools
+    delete cleanedOptions?.initialPageParam;
+    delete cleanedOptions?.behavior;
+    const observer = new QueryObserver(queryClient, cleanedOptions);
     query.addObserver(observer);
   });
 }
@@ -174,6 +179,8 @@ function dehydrateQuery(query: Query): DehydratedQuery {
   const observerStates: ObserverState[] = query.observers.map((observer) => ({
     queryHash: query.queryHash,
     options: observer.options,
+    // Remove queryFn from observer options to prevent not being able to capture fetch action
+    queryFn: undefined,
   }));
 
   return {
