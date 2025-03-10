@@ -4,14 +4,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useSyncQueriesWeb } from "./useSyncQueriesWeb";
-
-export default function Providers({ children }: any) {
+export default function Providers({ children, client }: any) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: {},
+        defaultOptions: {
+          queries: {
+            queryFn: async ({ queryKey }) => {
+              console.log("queryFn", queryKey);
+              // Prevent refetch from throwing an error
+              return Promise.resolve(null);
+            },
+          },
+        },
       })
   );
+
   useSyncQueriesWeb({ queryClient });
 
   return (
