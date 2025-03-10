@@ -1,4 +1,4 @@
-import { QueryClient, QueryOptions } from "@tanstack/react-query";
+import { QueryClient, QueryKey, QueryOptions } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
@@ -18,6 +18,21 @@ interface Props {
   queryClient: QueryClient;
 }
 
+type QueryActions =
+  | "Refetch"
+  | "Invalidate"
+  | "Reset"
+  | "Remove"
+  | "Trigger Loading"
+  | "Trigger Error"
+  | "Data Update";
+interface QueryActionMessage {
+  queryHash: string;
+  queryKey: QueryKey;
+  data: unknown;
+  action: QueryActions;
+}
+
 export function useSyncQueriesWeb({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
@@ -33,57 +48,7 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
     client.sendMessage("request-initial-state", {
       type: "initial-state-request",
     });
-    // log out events fetch, query data updates , etc
-    // queryClient.getQueryCache().subscribe((event) => {
-    //   switch (event.type) {
-    //     case "added":
-    //       // event.query available
-    //       console.log("added", event);
-    //       break;
-    //     case "removed":
-    //       // event.query available
-    //       console.log("removed", event);
-    //       break;
-    //     case "updated":
-    //       // event.query and event.action available
-    //       switch (event.action.type) {
-    //         case "fetch":
-    //           // Refetch Action
-    //           console.log("fetch", event);
-    //           break;
-    //         case "success":
-    //           console.log("success", event);
-    //           break;
-    //         case "error":
-    //           // Ignore error events
-    //           console.log("error", event);
-    //           break;
-    //         case "invalidate":
-    //           // Invalidate Action
-    //           console.log("invalidate", event);
-    //           break;
-    //         case "pause":
-    //           console.log("pause", event);
-    //           break;
-    //         case "continue":
-    //           console.log("continue", event);
-    //           break;
-    //         case "setState":
-    //           console.log("setState", event);
-    //           break;
-    //       }
-    //       break;
-    //     case "observerAdded":
-    //       // event.query and event.observer available
-    //       break;
-    //     case "observerRemoved":
-    //       // event.query and event.observer available
-    //       break;
-    //     case "observerResultsUpdated":
-    //       // event.query available
-    //       break;
-    //   }
-    // });
+    // Subscribe to query changes
     queryClient.getQueryCache().subscribe((event) => {
       switch (event.type) {
         case "removed": // Works
@@ -108,6 +73,11 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
                     queryHash: event.query.queryHash,
                   }
                 );
+                client.sendMessage("query-action", {
+                  queryHash: event.query.queryHash,
+                  queryKey: event.query.queryKey,
+                  action: isRefetch ? "Refetch" : "Trigger Loading",
+                } as QueryActionMessage);
               }
               break;
             case "invalidate":
@@ -118,30 +88,6 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
               });
               break;
             case "setState": {
-              console.log("setState Debug:", {
-                // Previous state
-                previousStateHadError: event.query.state.error !== null,
-
-                // Current action state
-                actionState: {
-                  error: event.action.state.error,
-                  status: event.action.state.status,
-                  fetchStatus: event.action.state.fetchStatus,
-                  fetchMeta: event.action.state.fetchMeta,
-                },
-
-                // Query state
-                queryState: {
-                  error: event.query.state.error,
-                  status: event.query.state.status,
-                  fetchStatus: event.query.state.fetchStatus,
-                  dataUpdateCount: event.query.state.dataUpdateCount,
-                  errorUpdateCount: event.query.state.errorUpdateCount,
-                },
-
-                // Full event for reference
-                fullEvent: event,
-              });
               // Could be Reset, Trigger Error or Restore Error button
               const isReset =
                 event.query.state.dataUpdateCount === 0 &&
@@ -185,12 +131,17 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
             case "success":
               // works
               if (event.action.manual) {
+                console.log("Manual update", {
+                  queryKey: event.query.queryKey,
+                  queryHash: event.query.queryHash,
+                });
                 // Send manualquery update to client
-                client.sendMessage("query-manual-update", {
+                client.sendMessage("query-action", {
                   queryHash: event.query.queryHash,
                   queryKey: event.query.queryKey,
                   data: event.query.state.data,
-                });
+                  action: "Data Update",
+                } as QueryActionMessage);
               }
               break;
           }
