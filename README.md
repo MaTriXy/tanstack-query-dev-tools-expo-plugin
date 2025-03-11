@@ -27,3 +27,4 @@ Contributions are very welcome! Please refer to guidelines described in the [con
 
 npm run web:dev
 npm all
+npx serve dist
