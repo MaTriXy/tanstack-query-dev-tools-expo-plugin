@@ -1,6 +1,5 @@
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools/src/production";
 import { useDevToolsPluginClient } from "expo/devtools";
-import "./index.css";
 import { View, Text } from "react-native";
 
 import Providers from "./external-dash/providers";
@@ -9,6 +8,7 @@ export default function App() {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
+  const envMode = process.env.NODE_ENV || "development";
 
   return (
     <Providers>
@@ -21,7 +21,9 @@ export default function App() {
           backgroundColor: client ? "lightgreen" : "lightcoral",
         }}
       >
-        <Text>{client ? "Connected" : "Disconnected"}</Text>
+        <Text>
+          {client ? "Connected" : "Disconnected"} ({envMode})
+        </Text>
       </View>
       <ReactQueryDevtools initialIsOpen />
     </Providers>
