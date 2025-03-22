@@ -37,7 +37,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@expo/metro-runtime": "~4.0.1"
+    "@expo/metro-runtime": "~4.0.1",
+    "expo-device": "~7.0.2"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.66.9",
