@@ -1,4 +1,4 @@
-import type { QueryKey } from "@tanstack/query-core";
+import type { QueryKey, QueryState } from "@tanstack/query-core";
 import { QueryClient } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
@@ -56,9 +56,9 @@ export function useSyncQueries({ queryClient }: Props) {
       "query-action",
       (message: QueryActionMessage) => {
         const { queryHash, queryKey, data, action } = message;
-        const query = queryClient.getQueryCache().get(queryHash);
+        const activeQuery = queryClient.getQueryCache().get(queryHash);
 
-        if (!query) {
+        if (!activeQuery) {
           console.warn(`Query with hash ${queryHash} not found`);
           return;
         }
@@ -72,38 +72,95 @@ export function useSyncQueries({ queryClient }: Props) {
           }
 
           case "ACTION-TRIGGER-ERROR": {
-            console.log("Trigger Error - Not implemented yet");
+            const error = new Error("Unknown error from devtools");
+
+            const __previousQueryOptions = activeQuery.options;
+            // @ts-ignore
+            activeQuery.setState({
+              status: "error",
+              error,
+              fetchMeta: {
+                ...activeQuery.state.fetchMeta,
+                __previousQueryOptions,
+              },
+            } as QueryState<unknown, Error>);
             break;
           }
           case "ACTION-RESTORE-ERROR": {
-            console.log("Restore Error - Not implemented yet");
+            const previousState = activeQuery.state;
+            const previousOptions = activeQuery.state.fetchMeta
+              ? (activeQuery.state.fetchMeta as any).__previousQueryOptions
+              : null;
+
+            activeQuery.cancel({ silent: true });
+            activeQuery.setState({
+              ...previousState,
+              fetchStatus: "idle",
+              fetchMeta: null,
+            });
+
+            if (previousOptions) {
+              activeQuery.fetch(previousOptions);
+            }
             break;
           }
           case "ACTION-TRIGGER-LOADING": {
-            console.log("Trigger Loading - Not implemented yet");
+            if (!activeQuery) return;
+            const __previousQueryOptions = activeQuery.options;
+            // Trigger a fetch in order to trigger suspense as well.
+            activeQuery.fetch({
+              ...__previousQueryOptions,
+              queryFn: () => {
+                return new Promise(() => {
+                  // Never resolve
+                });
+              },
+              gcTime: -1,
+            });
+            // @ts-ignore
+            activeQuery.setState({
+              data: undefined,
+              status: "pending",
+              fetchMeta: {
+                ...activeQuery.state.fetchMeta,
+                __previousQueryOptions,
+              },
+            } as QueryState<unknown, Error>);
             break;
           }
           case "ACTION-RESTORE-LOADING": {
-            console.log("Restore Loading - Not implemented yet");
+            const previousState = activeQuery.state;
+            const previousOptions = activeQuery.state.fetchMeta
+              ? (activeQuery.state.fetchMeta as any).__previousQueryOptions
+              : null;
+
+            activeQuery.cancel({ silent: true });
+            activeQuery.setState({
+              ...previousState,
+              fetchStatus: "idle",
+              fetchMeta: null,
+            });
+
+            if (previousOptions) {
+              activeQuery.fetch(previousOptions);
+            }
             break;
           }
           case "ACTION-RESET": {
-            console.log("Reset - Not implemented yet");
+            queryClient.resetQueries(activeQuery);
             break;
           }
-
           case "ACTION-REMOVE": {
-            console.log("Remove - Not implemented yet");
+            queryClient.removeQueries(activeQuery);
             break;
           }
-
           case "ACTION-REFETCH": {
-            query.fetch()?.catch(() => {});
+            const promise = activeQuery.fetch();
+            promise.catch(() => {});
             break;
           }
-
           case "ACTION-INVALIDATE": {
-            console.log("Invalidate - Not implemented yet");
+            queryClient.invalidateQueries(activeQuery);
             break;
           }
         }
