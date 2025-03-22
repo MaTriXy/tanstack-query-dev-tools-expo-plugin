@@ -4,6 +4,7 @@ import * as Device from "expo-device";
 import { useState } from "react";
 import "./index.css";
 
+import DeviceInfo from "./external-dash/DeviceInfo";
 import { DeviceSelection } from "./external-dash/DeviceSelection";
 import Providers from "./external-dash/providers";
 
@@ -16,6 +17,9 @@ export default function App() {
     "tanstack-query-dev-tools-expo-plugin"
   );
 
+  const selectedDeviceData = devices.find(
+    (device) => device.deviceName === selectedDevice
+  );
   return (
     <Providers setDevices={setDevices}>
       <div className="flex flex-col w-full h-full bg-gray-900 text-gray-200">
@@ -37,7 +41,12 @@ export default function App() {
           />
         </header>
         <main className="flex-1 p-4 overflow-auto">
-          {/* Content will go here */}
+          {selectedDeviceData && <DeviceInfo deviceData={selectedDeviceData} />}
+          {/* Map over all devices if selectedDevice is "All" */}
+          {selectedDevice === "All" &&
+            devices.map((device) => (
+              <DeviceInfo key={device.deviceName} deviceData={device} />
+            ))}
         </main>
       </div>
       <ReactQueryDevtools initialIsOpen />
