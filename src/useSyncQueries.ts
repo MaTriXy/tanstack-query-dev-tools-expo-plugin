@@ -7,13 +7,16 @@ import { Dehydrate } from "./hydration";
 import { SyncMessage } from "./types";
 // Use type-only imports to prevent runtime dependencies
 type QueryActions =
-  | "Refetch"
-  | "Invalidate"
-  | "Reset"
-  | "Remove"
-  | "Trigger Loading"
-  | "Trigger Error"
-  | "Data Update";
+  | "ACTION-REFETCH"
+  | "ACTION-INVALIDATE"
+  | "ACTION-TRIGGER-ERROR"
+  | "ACTION-RESTORE-ERROR"
+  | "ACTION-RESET"
+  | "ACTION-REMOVE"
+  | "ACTION-TRIGGER-LOADING"
+  | "ACTION-RESTORE-LOADING"
+  | "ACTION-DATA-UPDATE"
+  | "success";
 interface QueryActionMessage {
   queryHash: string;
   queryKey: QueryKey;
@@ -61,64 +64,46 @@ export function useSyncQueries({ queryClient }: Props) {
         }
 
         switch (action) {
-          case "Data Update": {
+          case "ACTION-DATA-UPDATE": {
             queryClient.setQueryData(queryKey, data, {
               updatedAt: Date.now(),
             });
             break;
           }
 
-          case "Trigger Error": {
+          case "ACTION-TRIGGER-ERROR": {
             console.log("Trigger Error - Not implemented yet");
-            // const previousOptions = query.options;
-            // query.fetch({
-            //   ...previousOptions,
-            //   queryFn: () => Promise.reject(new Error("Manual error trigger")),
-            //   gcTime: -1,
-            // });
             break;
           }
-
-          case "Trigger Loading": {
+          case "ACTION-RESTORE-ERROR": {
+            console.log("Restore Error - Not implemented yet");
+            break;
+          }
+          case "ACTION-TRIGGER-LOADING": {
             console.log("Trigger Loading - Not implemented yet");
-            // const previousOptions = query.options;
-            // query.fetch({
-            //   ...previousOptions,
-            //   queryFn: () => new Promise(() => {}), // Never resolves
-            //   gcTime: -1,
-            // });
-            // query.setState({
-            //   data: undefined,
-            //   status: "pending",
-            //   fetchMeta: {
-            //     ...query.state.fetchMeta,
-            //     // @ts-ignore
-            //     __previousQueryOptions: previousOptions,
-            //   },
-            // });
             break;
           }
-
-          case "Reset": {
+          case "ACTION-RESTORE-LOADING": {
+            console.log("Restore Loading - Not implemented yet");
+            break;
+          }
+          case "ACTION-RESET": {
             console.log("Reset - Not implemented yet");
-            // query.reset();
             break;
           }
 
-          case "Remove": {
+          case "ACTION-REMOVE": {
             console.log("Remove - Not implemented yet");
-            // queryClient.removeQueries({ queryKey });
             break;
           }
 
-          case "Refetch": {
+          case "ACTION-REFETCH": {
             query.fetch()?.catch(() => {});
             break;
           }
 
-          case "Invalidate": {
+          case "ACTION-INVALIDATE": {
             console.log("Invalidate - Not implemented yet");
-            // queryClient.invalidateQueries({ queryKey });
             break;
           }
         }

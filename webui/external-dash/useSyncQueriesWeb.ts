@@ -4,7 +4,6 @@ import { useEffect } from "react";
 
 import { Hydrate } from "./shared/hydration";
 import { SyncMessage } from "./shared/types";
-
 // Recreate the internal FetchMeta interface
 interface FetchMeta {
   fetchMore?: { direction: "forward" | "backward" };
@@ -19,13 +18,17 @@ interface Props {
 }
 
 type QueryActions =
-  | "Refetch"
-  | "Invalidate"
-  | "Reset"
-  | "Remove"
-  | "Trigger Loading"
-  | "Trigger Error"
-  | "Data Update";
+  | "ACTION-REFETCH"
+  | "ACTION-INVALIDATE"
+  | "ACTION-TRIGGER-ERROR"
+  | "ACTION-RESTORE-ERROR"
+  | "ACTION-RESET"
+  | "ACTION-REMOVE"
+  | "ACTION-TRIGGER-LOADING"
+  | "ACTION-RESTORE-LOADING"
+  | "ACTION-DATA-UPDATE"
+  | "success";
+
 interface QueryActionMessage {
   queryHash: string;
   queryKey: QueryKey;
@@ -51,101 +54,35 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
     // Subscribe to query changes
     queryClient.getQueryCache().subscribe((event) => {
       switch (event.type) {
-        case "removed": // Works
-          // Remove button clicked
-          console.log("Query removed", {
-            queryKey: event.query.queryKey,
-            queryHash: event.query.queryHash,
-          });
-          break;
-
         case "updated":
-          switch (event.action.type) {
-            case "fetch":
-              if (event.query.state.fetchStatus === "fetching") {
-                // Could be either Refetch button or Trigger Loading button
-                // You can differentiate by checking if there was previous data
-                const isRefetch = event.query.state.data !== undefined;
-                console.log(
-                  isRefetch ? "Refetch clicked" : "Trigger Loading clicked",
-                  {
-                    queryKey: event.query.queryKey,
-                    queryHash: event.query.queryHash,
-                  }
-                );
-                client.sendMessage("query-action", {
-                  queryHash: event.query.queryHash,
-                  queryKey: event.query.queryKey,
-                  action: isRefetch ? "Refetch" : "Trigger Loading",
-                } as QueryActionMessage);
-              }
-              break;
-            case "invalidate":
-              // Invalidate button clicked
-              console.log("Invalidate clicked", {
-                queryKey: event.query.queryKey,
+          switch (event.action.type as QueryActions) {
+            case "ACTION-REFETCH":
+            case "ACTION-INVALIDATE":
+            case "ACTION-TRIGGER-ERROR":
+            case "ACTION-RESTORE-ERROR":
+            case "ACTION-RESET":
+            case "ACTION-REMOVE":
+            case "ACTION-TRIGGER-LOADING":
+            case "ACTION-RESTORE-LOADING":
+              client.sendMessage("query-action", {
                 queryHash: event.query.queryHash,
-              });
+                queryKey: event.query.queryKey,
+                action: event.action.type as QueryActions,
+              } as QueryActionMessage);
               break;
-            case "setState": {
-              // Could be Reset, Trigger Error or Restore Error button
-              const isReset =
-                event.query.state.dataUpdateCount === 0 &&
-                event.query.state.errorUpdateCount === 0 &&
-                event.query.state.fetchStatus === "idle";
-
-              // Trigger Error sets both error and __previousQueryOptions
-              const triggerErrorClicked =
-                event.action.state.error !== null &&
-                (event.action.state.fetchMeta as ExtendedFetchMeta)
-                  ?.__previousQueryOptions !== undefined;
-
-              // For Restore Error:
-              // - Query state has error (state.status === 'error')
-              // - Action transitions to pending status with null error
-              const restoreErrorClicked =
-                event.query.state.status === "error" &&
-                event.action.state.status === "pending" &&
-                event.action.state.error === null &&
-                event.action.state.fetchStatus === "idle";
-
-              if (triggerErrorClicked) {
-                // works
-                console.log("Trigger Error clicked", {
-                  queryKey: event.query.queryKey,
-                  queryHash: event.query.queryHash,
-                });
-              } else if (restoreErrorClicked) {
-                console.log("Restore Error clicked", {
-                  queryKey: event.query.queryKey,
-                  queryHash: event.query.queryHash,
-                });
-              } else if (isReset) {
-                console.log("Reset clicked", {
-                  queryKey: event.query.queryKey,
-                  queryHash: event.query.queryHash,
-                });
-              }
-              break;
-            }
             case "success":
-              // works
+              // @ts-ignore
               if (event.action.manual) {
-                console.log("Manual update", {
-                  queryKey: event.query.queryKey,
-                  queryHash: event.query.queryHash,
-                });
                 // Send manualquery update to client
                 client.sendMessage("query-action", {
                   queryHash: event.query.queryHash,
                   queryKey: event.query.queryKey,
                   data: event.query.state.data,
-                  action: "Data Update",
+                  action: "ACTION-DATA-UPDATE",
                 } as QueryActionMessage);
               }
               break;
           }
-          break;
       }
     });
     const subscription = client.addMessageListener(
