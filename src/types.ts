@@ -9,7 +9,7 @@ import {
   QueryState,
   MutationKey,
 } from "@tanstack/react-query";
-
+import * as Device from "expo-device";
 // Define a simplified version of DehydratedState that both versions can work with
 export interface SimpleDehydratedState {
   mutations: any[];
@@ -19,6 +19,7 @@ export interface SimpleDehydratedState {
 export interface SyncMessage {
   type: "dehydrated-state";
   state: DehydratedState;
+  Device: typeof Device;
 }
 
 export interface DehydratedState {

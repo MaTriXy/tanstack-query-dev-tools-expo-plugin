@@ -1,10 +1,17 @@
 // We can not useState or useRef in a server component, which is why we are
 // extracting this part out into it's own file with 'use client' on top
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import * as Device from "expo-device";
+import { useState } from "react";
 
 import { useSyncQueriesWeb } from "./useSyncQueriesWeb";
-export default function Providers({ children, client }: any) {
+
+interface Props {
+  children: React.ReactNode;
+  setDevices: React.Dispatch<React.SetStateAction<(typeof Device)[]>>;
+}
+
+export default function Providers({ children, setDevices }: Props) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -20,11 +27,7 @@ export default function Providers({ children, client }: any) {
       })
   );
 
-  useSyncQueriesWeb({ queryClient });
-
-  useEffect(() => {
-    console.log("Providers loaded");
-  }, []);
+  useSyncQueriesWeb({ queryClient, setDevices });
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

@@ -1,6 +1,7 @@
 import type { QueryKey } from "@tanstack/query-core";
 import { onlineManager, QueryClient } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
+import * as Device from "expo-device";
 import { useEffect } from "react";
 
 import { Dehydrate } from "./hydration";
@@ -25,6 +26,9 @@ interface QueryActionMessage {
   data: unknown;
   action: QueryActions;
 }
+interface DeviceInfoMessage {
+  Device: typeof Device;
+}
 interface Props {
   queryClient: QueryClient;
 }
@@ -48,6 +52,7 @@ export function useSyncQueries({ queryClient }: Props) {
         const syncMessage: SyncMessage = {
           type: "dehydrated-state",
           state: dehydratedState,
+          Device,
         };
         client.sendMessage("query-sync", syncMessage);
       }
@@ -175,16 +180,27 @@ export function useSyncQueries({ queryClient }: Props) {
       const syncMessage: SyncMessage = {
         type: "dehydrated-state",
         state: dehydratedState,
+        Device,
       };
       // Send message to web
       client.sendMessage("query-sync", syncMessage);
     });
-
+    // Handle device info request
+    const deviceInfoSubscription = client.addMessageListener(
+      "device-request",
+      () => {
+        const syncMessage: DeviceInfoMessage = {
+          Device,
+        };
+        client.sendMessage("device-info", syncMessage);
+      }
+    );
     return () => {
       queryActionSubscription?.remove();
       initialStateSubscription?.remove();
       onlineManagerSubscription?.remove();
       unsubscribe();
+      deviceInfoSubscription?.remove();
     };
   }, [queryClient, client]);
 

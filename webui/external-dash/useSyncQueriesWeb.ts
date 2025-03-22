@@ -5,6 +5,7 @@ import {
   QueryOptions,
 } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
+import * as Device from "expo-device";
 import { useEffect } from "react";
 
 import { Hydrate } from "./shared/hydration";
@@ -20,6 +21,7 @@ interface ExtendedFetchMeta extends FetchMeta {
 
 interface Props {
   queryClient: QueryClient;
+  setDevices: React.Dispatch<React.SetStateAction<(typeof Device)[]>>;
 }
 
 type QueryActions =
@@ -41,7 +43,7 @@ interface QueryActionMessage {
   action: QueryActions;
 }
 
-export function useSyncQueriesWeb({ queryClient }: Props) {
+export function useSyncQueriesWeb({ queryClient, setDevices }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
@@ -52,6 +54,8 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
       return;
     }
     console.log("Connected");
+    // Get device
+    client.sendMessage("device-request", {});
     // Request initial state when web client connects
     client.sendMessage("request-initial-state", {
       type: "initial-state-request",
@@ -107,7 +111,14 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
         }
       }
     );
-
+    // Subscribe to device changes
+    client.addMessageListener(
+      "device-info",
+      (response: { Device: typeof Device }) => {
+        console.log("device-info", response);
+        setDevices((prev) => [...prev, response.Device]);
+      }
+    );
     return () => {
       subscription?.remove();
     };
