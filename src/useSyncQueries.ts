@@ -1,5 +1,5 @@
-import type { QueryKey, QueryState } from "@tanstack/query-core";
-import { QueryClient } from "@tanstack/react-query";
+import type { QueryKey } from "@tanstack/query-core";
+import { onlineManager, QueryClient } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
@@ -16,6 +16,8 @@ type QueryActions =
   | "ACTION-TRIGGER-LOADING"
   | "ACTION-RESTORE-LOADING"
   | "ACTION-DATA-UPDATE"
+  | "ACTION-ONLINE-MANAGER-ONLINE"
+  | "ACTION-ONLINE-MANAGER-OFFLINE"
   | "success";
 interface QueryActionMessage {
   queryHash: string;
@@ -48,6 +50,23 @@ export function useSyncQueries({ queryClient }: Props) {
           state: dehydratedState,
         };
         client.sendMessage("query-sync", syncMessage);
+      }
+    );
+    // Online manager handler
+    const onlineManagerSubscription = client.addMessageListener(
+      "online-manager",
+      (message: QueryActionMessage) => {
+        const { action } = message;
+        switch (action) {
+          case "ACTION-ONLINE-MANAGER-ONLINE": {
+            onlineManager.setOnline(true);
+            break;
+          }
+          case "ACTION-ONLINE-MANAGER-OFFLINE": {
+            onlineManager.setOnline(false);
+            break;
+          }
+        }
       }
     );
     // Query Actions handler
@@ -136,6 +155,14 @@ export function useSyncQueries({ queryClient }: Props) {
             queryClient.invalidateQueries(activeQuery);
             break;
           }
+          case "ACTION-ONLINE-MANAGER-ONLINE": {
+            onlineManager.setOnline(true);
+            break;
+          }
+          case "ACTION-ONLINE-MANAGER-OFFLINE": {
+            onlineManager.setOnline(false);
+            break;
+          }
         }
       }
     );
@@ -156,6 +183,7 @@ export function useSyncQueries({ queryClient }: Props) {
     return () => {
       queryActionSubscription?.remove();
       initialStateSubscription?.remove();
+      onlineManagerSubscription?.remove();
       unsubscribe();
     };
   }, [queryClient, client]);

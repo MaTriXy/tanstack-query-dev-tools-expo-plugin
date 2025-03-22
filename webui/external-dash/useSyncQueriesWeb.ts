@@ -1,4 +1,9 @@
-import { QueryClient, QueryKey, QueryOptions } from "@tanstack/react-query";
+import {
+  onlineManager,
+  QueryClient,
+  QueryKey,
+  QueryOptions,
+} from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import { useEffect } from "react";
 
@@ -50,6 +55,14 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
     // Request initial state when web client connects
     client.sendMessage("request-initial-state", {
       type: "initial-state-request",
+    });
+    // Subscribe to online manager changes
+    onlineManager.subscribe((isOnline: boolean) => {
+      client.sendMessage("online-manager", {
+        action: isOnline
+          ? "ACTION-ONLINE-MANAGER-ONLINE"
+          : "ACTION-ONLINE-MANAGER-OFFLINE",
+      });
     });
     // Subscribe to query changes
     queryClient.getQueryCache().subscribe((event) => {
