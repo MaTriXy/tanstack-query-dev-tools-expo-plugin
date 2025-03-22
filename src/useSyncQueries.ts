@@ -51,7 +51,6 @@ export function useSyncQueries({ queryClient }: Props) {
       }
     );
     // Query Actions handler
-    // Query Actions handler
     const queryActionSubscription = client.addMessageListener(
       "query-action",
       (message: QueryActionMessage) => {
@@ -75,33 +74,20 @@ export function useSyncQueries({ queryClient }: Props) {
             const error = new Error("Unknown error from devtools");
 
             const __previousQueryOptions = activeQuery.options;
-            // @ts-ignore
             activeQuery.setState({
               status: "error",
               error,
               fetchMeta: {
                 ...activeQuery.state.fetchMeta,
+                // @ts-ignore This does exist
                 __previousQueryOptions,
               },
-            } as QueryState<unknown, Error>);
+            });
             break;
           }
           case "ACTION-RESTORE-ERROR": {
-            const previousState = activeQuery.state;
-            const previousOptions = activeQuery.state.fetchMeta
-              ? (activeQuery.state.fetchMeta as any).__previousQueryOptions
-              : null;
-
-            activeQuery.cancel({ silent: true });
-            activeQuery.setState({
-              ...previousState,
-              fetchStatus: "idle",
-              fetchMeta: null,
-            });
-
-            if (previousOptions) {
-              activeQuery.fetch(previousOptions);
-            }
+            const promise = activeQuery.fetch();
+            promise.catch(() => {});
             break;
           }
           case "ACTION-TRIGGER-LOADING": {
@@ -117,33 +103,20 @@ export function useSyncQueries({ queryClient }: Props) {
               },
               gcTime: -1,
             });
-            // @ts-ignore
             activeQuery.setState({
               data: undefined,
               status: "pending",
               fetchMeta: {
                 ...activeQuery.state.fetchMeta,
+                // @ts-ignore This does exist
                 __previousQueryOptions,
               },
-            } as QueryState<unknown, Error>);
+            });
             break;
           }
           case "ACTION-RESTORE-LOADING": {
-            const previousState = activeQuery.state;
-            const previousOptions = activeQuery.state.fetchMeta
-              ? (activeQuery.state.fetchMeta as any).__previousQueryOptions
-              : null;
-
-            activeQuery.cancel({ silent: true });
-            activeQuery.setState({
-              ...previousState,
-              fetchStatus: "idle",
-              fetchMeta: null,
-            });
-
-            if (previousOptions) {
-              activeQuery.fetch(previousOptions);
-            }
+            const promise = activeQuery.fetch();
+            promise.catch(() => {});
             break;
           }
           case "ACTION-RESET": {
