@@ -136,8 +136,7 @@ export function useSyncQueries({ queryClient }: Props) {
             break;
           }
           case "ACTION-RESTORE-ERROR": {
-            const promise = activeQuery.fetch();
-            promise.catch(() => {});
+            queryClient.resetQueries(activeQuery);
             break;
           }
           case "ACTION-TRIGGER-LOADING": {
@@ -165,8 +164,21 @@ export function useSyncQueries({ queryClient }: Props) {
             break;
           }
           case "ACTION-RESTORE-LOADING": {
-            const promise = activeQuery.fetch();
-            promise.catch(() => {});
+            const previousState = activeQuery.state;
+            const previousOptions = activeQuery.state.fetchMeta
+              ? (activeQuery.state.fetchMeta as any).__previousQueryOptions
+              : null;
+
+            activeQuery.cancel({ silent: true });
+            activeQuery.setState({
+              ...previousState,
+              fetchStatus: "idle",
+              fetchMeta: null,
+            });
+
+            if (previousOptions) {
+              activeQuery.fetch(previousOptions);
+            }
             break;
           }
           case "ACTION-RESET": {
