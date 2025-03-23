@@ -1,7 +1,7 @@
 import { onlineManager, QueryClient, QueryKey } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
 import * as Device from "expo-device";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { Hydrate } from "./shared/hydration";
 import { SyncMessage } from "./shared/types";
@@ -23,6 +23,7 @@ interface QueryActionMessage {
   queryKey: QueryKey;
   data: unknown;
   action: QueryActions;
+  targetDevice: string;
 }
 
 interface Props {
@@ -42,28 +43,43 @@ export function useSyncQueriesWeb({
     "tanstack-query-dev-tools-expo-plugin"
   );
 
+  // Store selectedDevice in a ref to avoid effect re-runs
+  const selectedDeviceRef = useRef(selectedDevice);
+
+  // Update ref when selectedDevice changes and handle device switching
+  useEffect(() => {
+    selectedDeviceRef.current = selectedDevice;
+
+    if (client) {
+      // Clear all Query cache and mutations when device changes
+      queryClient.clear();
+      // Request fresh state from devices
+      client.sendMessage("request-initial-state", {
+        type: "initial-state-request",
+      });
+    }
+  }, [selectedDevice, client, queryClient]);
+
   useEffect(() => {
     if (!client) {
       console.log("No client");
       return;
     }
     console.log("Connected");
-    // Get device
+    // Ping all connected devices for their device info
     client.sendMessage("device-request", {});
-    // Request initial state when web client connects
-    client.sendMessage("request-initial-state", {
-      type: "initial-state-request",
-    });
+
     // Subscribe to online manager changes
     onlineManager.subscribe((isOnline: boolean) => {
       client.sendMessage("online-manager", {
         action: isOnline
           ? "ACTION-ONLINE-MANAGER-ONLINE"
           : "ACTION-ONLINE-MANAGER-OFFLINE",
+        targetDevice: selectedDeviceRef.current,
       });
     });
     // Subscribe to query changes
-    queryClient.getQueryCache().subscribe((event) => {
+    const querySubscription = queryClient.getQueryCache().subscribe((event) => {
       switch (event.type) {
         case "updated":
           switch (event.action.type as QueryActions) {
@@ -79,40 +95,47 @@ export function useSyncQueriesWeb({
                 queryHash: event.query.queryHash,
                 queryKey: event.query.queryKey,
                 action: event.action.type as QueryActions,
+                targetDevice: selectedDeviceRef.current,
               } as QueryActionMessage);
               break;
             case "success":
               // @ts-ignore
               if (event.action.manual) {
-                // Send manualquery update to client
+                console.log(
+                  "Sending manual query update to client targetDevice:",
+                  selectedDeviceRef.current
+                );
                 client.sendMessage("query-action", {
                   queryHash: event.query.queryHash,
                   queryKey: event.query.queryKey,
                   data: event.query.state.data,
                   action: "ACTION-DATA-UPDATE",
+                  targetDevice: selectedDeviceRef.current,
                 } as QueryActionMessage);
               }
               break;
           }
       }
     });
-    const subscription = client.addMessageListener(
+
+    // Subscribe to query sync messages
+    const syncSubscription = client.addMessageListener(
       "query-sync",
       (message: SyncMessage) => {
         if (message.type === "dehydrated-state") {
           // Only process data if it's from the selected device or if "all" is selected
           if (
-            selectedDevice === "all" ||
-            message.Device.deviceName === selectedDevice
+            selectedDeviceRef.current === "All" ||
+            message.Device.deviceName === selectedDeviceRef.current
           ) {
-            // Hydrate sets initial data state
             hydrateState(queryClient, message);
           }
         }
       }
     );
+
     // Subscribe to device changes
-    client.addMessageListener(
+    const deviceSubscription = client.addMessageListener(
       "device-info",
       (response: { Device: typeof Device }) => {
         setDevices((prevDevices) => {
@@ -126,10 +149,14 @@ export function useSyncQueriesWeb({
         });
       }
     );
+
+    // Cleanup all subscriptions
     return () => {
-      subscription?.remove();
+      syncSubscription?.remove();
+      deviceSubscription?.remove();
+      querySubscription();
     };
-  }, [queryClient, client, selectedDevice]);
+  }, [queryClient, client]); // Keep dependencies minimal
 
   return { isConnected: !!client };
 }

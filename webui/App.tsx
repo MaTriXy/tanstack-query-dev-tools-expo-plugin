@@ -34,6 +34,7 @@ export default function App() {
             />
             <span className="text-sm font-mono">
               {client ? "Connected" : "Disconnected"}
+              {client && ` - ${selectedDevice}`}
             </span>
           </div>
           <DeviceSelection

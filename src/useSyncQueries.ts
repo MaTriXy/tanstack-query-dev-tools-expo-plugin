@@ -25,12 +25,26 @@ interface QueryActionMessage {
   queryKey: QueryKey;
   data: unknown;
   action: QueryActions;
+  targetDevice: string;
 }
 interface DeviceInfoMessage {
   Device: typeof Device;
 }
 interface Props {
   queryClient: QueryClient;
+}
+
+function shouldProcessMessage(
+  targetDevice: string,
+  currentDeviceName: string
+): boolean {
+  const shouldProcess =
+    targetDevice === currentDeviceName || targetDevice === "All";
+  console.log(
+    `Message processing: target=${targetDevice}, current=${currentDeviceName}, ` +
+      `will process=${shouldProcess}`
+  );
+  return shouldProcess;
 }
 
 export function useSyncQueries({ queryClient }: Props) {
@@ -57,11 +71,15 @@ export function useSyncQueries({ queryClient }: Props) {
         client.sendMessage("query-sync", syncMessage);
       }
     );
-    // Online manager handler
+    // Online manager handler - Turn device internet connection on/off
     const onlineManagerSubscription = client.addMessageListener(
       "online-manager",
       (message: QueryActionMessage) => {
-        const { action } = message;
+        const { action, targetDevice } = message;
+        // Only process if the target device is the current device or "All"
+        if (targetDevice !== Device.deviceName && targetDevice !== "All") {
+          return;
+        }
         switch (action) {
           case "ACTION-ONLINE-MANAGER-ONLINE": {
             onlineManager.setOnline(true);
@@ -74,13 +92,21 @@ export function useSyncQueries({ queryClient }: Props) {
         }
       }
     );
-    // Query Actions handler
+    // Query Actions handler - Update query data, trigger errors, etc.
     const queryActionSubscription = client.addMessageListener(
       "query-action",
       (message: QueryActionMessage) => {
-        const { queryHash, queryKey, data, action } = message;
-        const activeQuery = queryClient.getQueryCache().get(queryHash);
+        const { queryHash, queryKey, data, action, targetDevice } = message;
 
+        // Centralize the device check
+        if (!shouldProcessMessage(targetDevice, Device.deviceName || "")) {
+          console.log(
+            `Ignoring action for device ${targetDevice}, current device is ${Device.deviceName}`
+          );
+          return;
+        }
+
+        const activeQuery = queryClient.getQueryCache().get(queryHash);
         if (!activeQuery) {
           console.warn(`Query with hash ${queryHash} not found`);
           return;
@@ -172,7 +198,7 @@ export function useSyncQueries({ queryClient }: Props) {
       }
     );
 
-    // Subscribe to query changes
+    // Subscribe to query changes - Send query state to web
     const unsubscribe = queryClient.getQueryCache().subscribe(() => {
       // Dehydrate the current state
       const dehydratedState = Dehydrate(queryClient as any);
@@ -185,7 +211,7 @@ export function useSyncQueries({ queryClient }: Props) {
       // Send message to web
       client.sendMessage("query-sync", syncMessage);
     });
-    // Handle device info request
+    // Handle device info request - Send device info to web
     const deviceInfoSubscription = client.addMessageListener(
       "device-request",
       () => {
