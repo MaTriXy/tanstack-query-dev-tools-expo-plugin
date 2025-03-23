@@ -33,7 +33,7 @@ export function DeviceSelection({
 
   // Generate device options
   const deviceOptions = [
-    { value: "All", label: "All devices" },
+    { value: "All", label: "All" },
     ...(devices.length === 0
       ? [{ value: "", label: "No devices available", disabled: true }]
       : devices.map((device) => ({
