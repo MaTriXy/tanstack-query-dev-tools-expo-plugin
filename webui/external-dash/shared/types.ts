@@ -20,6 +20,7 @@ export interface SyncMessage {
   type: "dehydrated-state";
   state: DehydratedState;
   Device: typeof Device;
+  isOnlineManagerOnline: boolean;
 }
 
 export interface DehydratedState {

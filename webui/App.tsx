@@ -10,7 +10,9 @@ import Providers from "./external-dash/providers";
 
 export default function App() {
   const [devices, setDevices] = useState<(typeof Device)[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string>("All");
+  const [selectedDevice, setSelectedDevice] = useState<string>(
+    "Please select a device"
+  );
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );

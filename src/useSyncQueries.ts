@@ -67,6 +67,7 @@ export function useSyncQueries({ queryClient }: Props) {
           type: "dehydrated-state",
           state: dehydratedState,
           Device,
+          isOnlineManagerOnline: onlineManager.isOnline(),
         };
         client.sendMessage("query-sync", syncMessage);
       }
@@ -219,6 +220,7 @@ export function useSyncQueries({ queryClient }: Props) {
         type: "dehydrated-state",
         state: dehydratedState,
         Device,
+        isOnlineManagerOnline: onlineManager.isOnline(),
       };
       // Send message to web
       client.sendMessage("query-sync", syncMessage);
