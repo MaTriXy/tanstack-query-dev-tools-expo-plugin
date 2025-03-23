@@ -19,6 +19,10 @@ function defaultTransformerFn(data: any): any {
   return data;
 }
 
+const mockQueryFn = () => {
+  return Promise.resolve(null);
+};
+
 export function Hydrate(
   client: QueryClient,
   dehydratedState: DehydratedState,
@@ -72,6 +76,12 @@ export function Hydrate(
             ...state,
             data,
           });
+          query.setOptions({
+            ...query.options,
+            queryFn: mockQueryFn,
+            retry: 0,
+            gcTime: 0,
+          });
         }
       } else {
         // Restore query
@@ -83,11 +93,7 @@ export function Hydrate(
             queryKey,
             queryHash,
             meta,
-            queryFn: () => {
-              console.log("Refetch Pressed");
-              // Return a never-resolving promise to stay in fetching state
-              return new Promise(() => {});
-            },
+            queryFn: mockQueryFn,
           },
           {
             ...state,
@@ -131,6 +137,8 @@ function recreateObserver(
     // @ts-ignore - This prevents infinite queries from being refetched in dev tools
     delete cleanedOptions?.initialPageParam;
     delete cleanedOptions?.behavior;
+    // Replace the queryFn with a mock function to prevent errors when restoring error
+    cleanedOptions.queryFn = mockQueryFn;
     const observer = new QueryObserver(queryClient, cleanedOptions);
     query.addObserver(observer);
   });
