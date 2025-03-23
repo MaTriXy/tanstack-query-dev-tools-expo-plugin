@@ -42,9 +42,10 @@ export function Hydrate(
 
   // Sync mutations
   dehydratedMutations.forEach(({ state, ...mutationOptions }) => {
-    const existingMutation = mutationCache
-      .getAll()
-      .find((mutation) => mutation.mutationId === mutationOptions.mutationId);
+    const existingMutation = mutationCache.getAll().find(
+      // @ts-expect-error -  mutation.options.mutationId does exist we add it in the dehydrated state
+      (mutation) => mutation.options.mutationId === mutationOptions.mutationId
+    );
 
     if (existingMutation) {
       existingMutation.state = state;
