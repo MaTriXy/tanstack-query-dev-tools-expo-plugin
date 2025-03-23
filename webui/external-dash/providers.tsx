@@ -9,9 +9,16 @@ import { useSyncQueriesWeb } from "./useSyncQueriesWeb";
 interface Props {
   children: React.ReactNode;
   setDevices: React.Dispatch<React.SetStateAction<(typeof Device)[]>>;
+  selectedDevice: string;
+  devices: (typeof Device)[];
 }
 
-export default function Providers({ children, setDevices }: Props) {
+export default function Providers({
+  children,
+  setDevices,
+  selectedDevice,
+  devices,
+}: Props) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -27,7 +34,7 @@ export default function Providers({ children, setDevices }: Props) {
       })
   );
 
-  useSyncQueriesWeb({ queryClient, setDevices });
+  useSyncQueriesWeb({ queryClient, setDevices, selectedDevice, devices });
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

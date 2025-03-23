@@ -10,9 +10,7 @@ import Providers from "./external-dash/providers";
 
 export default function App() {
   const [devices, setDevices] = useState<(typeof Device)[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string>(
-    devices.length > 0 ? "All" : "No devices available"
-  );
+  const [selectedDevice, setSelectedDevice] = useState<string>("All");
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
@@ -21,7 +19,11 @@ export default function App() {
     (device) => device.deviceName === selectedDevice
   );
   return (
-    <Providers setDevices={setDevices}>
+    <Providers
+      setDevices={setDevices}
+      selectedDevice={selectedDevice}
+      devices={devices}
+    >
       <div className="flex flex-col w-full h-full bg-gray-900 text-gray-200">
         <header className="w-full px-4 py-3 border-b border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-2">

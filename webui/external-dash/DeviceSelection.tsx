@@ -36,9 +36,9 @@ export function DeviceSelection({
     { value: "All", label: "All devices" },
     ...(devices.length === 0
       ? [{ value: "", label: "No devices available", disabled: true }]
-      : devices.map((device, index) => ({
-          value: device.deviceName || "Unknown " + index,
-          label: device.deviceName || "Unknown " + index,
+      : devices.map((device) => ({
+          value: device.deviceName || "Unknown",
+          label: device.deviceName || "Unknown",
         }))),
   ];
 
