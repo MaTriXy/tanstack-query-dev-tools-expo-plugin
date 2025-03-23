@@ -25,5 +25,25 @@ npm install tanstack-query-dev-tools-expo-plugin
 
 Contributions are very welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).
 
+expo start --web (defaults to development mode)
+expo start --web --no-dev (sets to production mode)
+
 npm run web:dev
 npm all
+npx serve dist
+
+React Query clone
+
+# Terminal 1 - in query-devtools
+
+cd /Users/aj/Desktop/react-query-clone/packages/query-devtools
+pnpm build:dev & (while true; do yalc push --changed; sleep 2; done)
+
+# Terminal 2 - in react-query-devtools
+
+cd /Users/aj/Desktop/react-query-clone/packages/react-query-devtools
+pnpm build:dev & (while true; do yalc push --changed; sleep 2; done)
+
+This app -
+yalc add @tanstack/query-devtools --watch
+yalc add @tanstack/react-query-devtools --watch

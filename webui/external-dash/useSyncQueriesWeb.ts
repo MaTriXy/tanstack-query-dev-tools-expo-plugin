@@ -1,17 +1,64 @@
-import { QueryClient, QueryObserver } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryKey } from "@tanstack/react-query";
 import { useDevToolsPluginClient } from "expo/devtools";
-import { useEffect } from "react";
+import * as Device from "expo-device";
+import { useEffect, useRef } from "react";
 
-import { customHydrate } from "./hydration";
-import { SyncMessage } from "../../src/useSyncQueries";
-interface Props {
-  queryClient: QueryClient;
+import { Hydrate } from "./shared/hydration";
+import { SyncMessage } from "./shared/types";
+
+type QueryActions =
+  | "ACTION-REFETCH"
+  | "ACTION-INVALIDATE"
+  | "ACTION-TRIGGER-ERROR"
+  | "ACTION-RESTORE-ERROR"
+  | "ACTION-RESET"
+  | "ACTION-REMOVE"
+  | "ACTION-TRIGGER-LOADING"
+  | "ACTION-RESTORE-LOADING"
+  | "ACTION-DATA-UPDATE"
+  | "success";
+
+interface QueryActionMessage {
+  queryHash: string;
+  queryKey: QueryKey;
+  data: unknown;
+  action: QueryActions;
+  targetDevice: string;
 }
 
-export function useSyncQueriesWeb({ queryClient }: Props) {
+interface Props {
+  queryClient: QueryClient;
+  setDevices: React.Dispatch<React.SetStateAction<(typeof Device)[]>>;
+  selectedDevice: string;
+  devices: (typeof Device)[];
+}
+
+export function useSyncQueriesWeb({
+  queryClient,
+  setDevices,
+  selectedDevice,
+  devices,
+}: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
+
+  // Store selectedDevice in a ref to avoid effect re-runs
+  const selectedDeviceRef = useRef(selectedDevice);
+
+  // Update ref when selectedDevice changes and handle device switching
+  useEffect(() => {
+    selectedDeviceRef.current = selectedDevice;
+
+    if (client) {
+      // Clear all Query cache and mutations when device changes
+      queryClient.clear();
+      // Request fresh state from devices
+      client.sendMessage("request-initial-state", {
+        type: "initial-state-request",
+      });
+    }
+  }, [selectedDevice, client, queryClient]);
 
   useEffect(() => {
     if (!client) {
@@ -19,58 +66,102 @@ export function useSyncQueriesWeb({ queryClient }: Props) {
       return;
     }
     console.log("Connected");
+    // Ping all connected devices for their device info
+    client.sendMessage("device-request", {});
 
-    const subscription = client.addMessageListener(
+    // Subscribe to online manager changes
+    onlineManager.subscribe((isOnline: boolean) => {
+      client.sendMessage("online-manager", {
+        action: isOnline
+          ? "ACTION-ONLINE-MANAGER-ONLINE"
+          : "ACTION-ONLINE-MANAGER-OFFLINE",
+        targetDevice: selectedDeviceRef.current,
+      });
+    });
+    // Subscribe to query changes
+    const querySubscription = queryClient.getQueryCache().subscribe((event) => {
+      switch (event.type) {
+        case "updated":
+          switch (event.action.type as QueryActions) {
+            case "ACTION-REFETCH":
+            case "ACTION-INVALIDATE":
+            case "ACTION-TRIGGER-ERROR":
+            case "ACTION-RESTORE-ERROR":
+            case "ACTION-RESET":
+            case "ACTION-REMOVE":
+            case "ACTION-TRIGGER-LOADING":
+            case "ACTION-RESTORE-LOADING":
+              client.sendMessage("query-action", {
+                queryHash: event.query.queryHash,
+                queryKey: event.query.queryKey,
+                action: event.action.type as QueryActions,
+                targetDevice: selectedDeviceRef.current,
+              } as QueryActionMessage);
+              break;
+            case "success":
+              // @ts-ignore
+              if (event.action.manual) {
+                client.sendMessage("query-action", {
+                  queryHash: event.query.queryHash,
+                  queryKey: event.query.queryKey,
+                  data: event.query.state.data,
+                  action: "ACTION-DATA-UPDATE",
+                  targetDevice: selectedDeviceRef.current,
+                } as QueryActionMessage);
+              }
+              break;
+          }
+      }
+    });
+
+    // Subscribe to query sync messages
+    const syncSubscription = client.addMessageListener(
       "query-sync",
       (message: SyncMessage) => {
         if (message.type === "dehydrated-state") {
-          // Clean up observers
-          cleanUpObservers(queryClient);
-          // Hydrate sets initial data state
-          hydrateState(queryClient, message);
-          // Recreate observers
-          recreateObservers(queryClient, message);
+          // Only process data if it's from the selected device or if "all" is selected
+          if (
+            selectedDeviceRef.current === "All" ||
+            message.Device.deviceName === selectedDeviceRef.current
+          ) {
+            // Sync online manager state
+            onlineManager.setOnline(message.isOnlineManagerOnline);
+            hydrateState(queryClient, message);
+          }
         }
       }
     );
 
+    // Subscribe to device changes
+    const deviceSubscription = client.addMessageListener(
+      "device-info",
+      (response: { Device: typeof Device }) => {
+        setDevices((prevDevices) => {
+          const deviceExists = prevDevices.some(
+            (device) => device.deviceName === response.Device.deviceName
+          );
+          if (!deviceExists) {
+            return [...prevDevices, response.Device];
+          }
+          return prevDevices;
+        });
+      }
+    );
+
+    // Cleanup all subscriptions
     return () => {
-      subscription?.remove();
+      syncSubscription?.remove();
+      deviceSubscription?.remove();
+      querySubscription();
     };
-  }, [queryClient, client]);
+  }, [queryClient, client]); // Keep dependencies minimal
 
   return { isConnected: !!client };
 }
 
-// Clean up existing observers
-function cleanUpObservers(queryClient: QueryClient) {
-  queryClient
-    .getQueryCache()
-    .getAll()
-    .forEach((query) => {
-      const observers = query.observers;
-      observers.forEach((observer) => {
-        query.removeObserver(observer);
-      });
-    });
-}
-// Recreate observers
-function recreateObservers(queryClient: QueryClient, message: SyncMessage) {
-  message.observers.forEach((observerState) => {
-    const query = queryClient.getQueryCache().get(observerState.queryHash);
-    if (query) {
-      // Cast the options to any to bypass the type incompatibility
-      const observer = new QueryObserver(
-        queryClient,
-        observerState.options as any
-      );
-      query.addObserver(observer);
-    }
-  });
-}
 // Hydrate sets initial data state
 function hydrateState(queryClient: QueryClient, message: SyncMessage) {
-  customHydrate(queryClient, message.state, {
+  Hydrate(queryClient as any, message.state, {
     defaultOptions: {
       queries: {
         staleTime: Infinity,
