@@ -128,6 +128,8 @@ export function useSyncQueriesWeb({
             selectedDeviceRef.current === "All" ||
             message.Device.deviceName === selectedDeviceRef.current
           ) {
+            // Sync online manager state
+            onlineManager.setOnline(message.isOnlineManagerOnline);
             hydrateState(queryClient, message);
           }
         }
