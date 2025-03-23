@@ -101,10 +101,6 @@ export function useSyncQueriesWeb({
             case "success":
               // @ts-ignore
               if (event.action.manual) {
-                console.log(
-                  "Sending manual query update to client targetDevice:",
-                  selectedDeviceRef.current
-                );
                 client.sendMessage("query-action", {
                   queryHash: event.query.queryHash,
                   queryKey: event.query.queryKey,

@@ -40,10 +40,6 @@ function shouldProcessMessage(
 ): boolean {
   const shouldProcess =
     targetDevice === currentDeviceName || targetDevice === "All";
-  console.log(
-    `Message processing: target=${targetDevice}, current=${currentDeviceName}, ` +
-      `will process=${shouldProcess}`
-  );
   return shouldProcess;
 }
 
@@ -101,9 +97,6 @@ export function useSyncQueries({ queryClient }: Props) {
 
         // Centralize the device check
         if (!shouldProcessMessage(targetDevice, Device.deviceName || "")) {
-          console.log(
-            `Ignoring action for device ${targetDevice}, current device is ${Device.deviceName}`
-          );
           return;
         }
 
