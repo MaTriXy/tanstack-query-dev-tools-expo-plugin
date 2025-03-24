@@ -1,6 +1,6 @@
 {
   "name": "tanstack-query-dev-tools-expo-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Expo plugin for Tanstack Query DevTools",
   "main": "build/index.js",
   "types": "build/index.d.ts",
