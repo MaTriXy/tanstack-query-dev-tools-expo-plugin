@@ -1,5 +1,3 @@
-
-
 <h1 align="center">Tanstack Query DevTools Expo Plugin</h1>
 
 <p align="center">
@@ -28,6 +26,9 @@ Bring the power of [Tanstack Query DevTools](https://tanstack.com/query/latest/d
 ✅ **Loading Simulation**: Trigger loading states to test loading UIs  
 ✅ **Cross-Platform**: Works on iOS, Android and web Expo apps  
 ✅ **Compatible**: Supports both React Query v4 and v5
+
+![actions](https://github.com/user-attachments/assets/dcedd904-c32a-4931-8fab-30bf9fb1cf1a)
+![ui dev tools](https://github.com/user-attachments/assets/b1ad1a3f-f30f-436e-a51d-c32b71db0b8c)
 
 ## Installation
 
@@ -67,6 +68,8 @@ export function App() {
   );
 }
 ```
+## Press Shift + M in your terminal to show your expo dev tools and select `Open tanstack-query-dev-tools-expo-plugin`
+![image](https://github.com/user-attachments/assets/cfa225f2-a222-4bfa-abc8-7038ec3616f8)
 
 ## DevTools Capabilities
 
