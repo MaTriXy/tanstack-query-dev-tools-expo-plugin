@@ -14,3 +14,5 @@ yalc add @tanstack/query-devtools --watch
 yalc add @tanstack/react-query-devtools --watch
 
 # Make sure to modify html src after build to include all js files.
+
+@dist/index.html - Add js scripts from @dist/\_expo/static/js
