@@ -43,12 +43,27 @@ function shouldProcessMessage(
   return shouldProcess;
 }
 
+function checkVersion(queryClient: QueryClient) {
+  // Basic version check
+  const version = (queryClient as any).getDefaultOptions?.()?.queries?.version;
+  if (
+    version &&
+    !version.toString().startsWith("4") &&
+    !version.toString().startsWith("5")
+  ) {
+    console.warn(
+      "This version of React Query has not been tested with the dev tools plugin. Some features might not work as expected."
+    );
+  }
+}
+
 export function useSyncQueries({ queryClient }: Props) {
   const client = useDevToolsPluginClient(
     "tanstack-query-dev-tools-expo-plugin"
   );
 
   useEffect(() => {
+    checkVersion(queryClient);
     if (!client) {
       console.log("no client");
       return;
