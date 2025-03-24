@@ -1,7 +1,7 @@
 {
   "name": "tanstack-query-dev-tools-expo-plugin",
   "version": "0.1.0",
-  "description": "React NativeTanstack Query DevTools for Expo",
+  "description": "A Expo plugin for Tanstack Query DevTools",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "sideEffects": false,
@@ -27,7 +27,12 @@
     "tanstack-query",
     "tanstack-query-devtools",
     "tanstack-query-devtools-expo",
-    "tanstack-query-devtools-expo-react-native"
+    "tanstack-query-devtools-expo-react-native",
+    "tanstack-query-devtools-expo-plugin",
+    "tanstack-query-devtools-expo-plugin-react-native",
+    "tanstack-query-devtools-expo-plugin-webui",
+    "tanstack-query-devtools-expo-plugin-webui-react-native",
+    "React-Query-Dev-Tools"
   ],
   "author": "LovesWorking (https://github.com/LovesWorking)",
   "files": [
@@ -49,6 +54,5 @@
   "peerDependencies": {
     "@tanstack/react-query": "^4.0.0",
     "expo": "*"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }
