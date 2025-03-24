@@ -64,6 +64,9 @@ export function App() {
 ## Press Shift + M in your terminal to show your expo dev tools and select `Open tanstack-query-dev-tools-expo-plugin`
 ![image](https://github.com/user-attachments/assets/cfa225f2-a222-4bfa-abc8-7038ec3616f8)
 
+## Example app
+https://github.com/LovesWorking/RN-Dev-Tools-Example
+
 ## DevTools Capabilities
 
 ### Monitoring Queries
