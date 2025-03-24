@@ -1,13 +1,6 @@
 <h1 align="center">Tanstack Query DevTools Expo Plugin</h1>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/tanstack-query-dev-tools-expo-plugin">
-    <img src="https://img.shields.io/npm/v/tanstack-query-dev-tools-expo-plugin.svg" alt="npm version" />
-  </a>
-  <a href="https://github.com/LovesWorking/tanstack-query-dev-tools-expo-plugin/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/tanstack-query-dev-tools-expo-plugin.svg" alt="license" />
-  </a>
-</p>
+
 
 <br />
 
