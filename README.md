@@ -1,49 +1,111 @@
-# tanstack-query-dev-tools-expo-plugin
 
-Tanstack Query DevTools for Expo
 
-# API documentation
+<h1 align="center">Tanstack Query DevTools Expo Plugin</h1>
 
-- [Documentation for the latest stable release](https://docs.expo.dev/versions/latest/sdk/tanstack-query-dev-tools-plugin/)
-- [Documentation for the main branch](https://docs.expo.dev/versions/unversioned/sdk/tanstack-query-dev-tools-plugin/)
+<p align="center">
+  <a href="https://www.npmjs.com/package/tanstack-query-dev-tools-expo-plugin">
+    <img src="https://img.shields.io/npm/v/tanstack-query-dev-tools-expo-plugin.svg" alt="npm version" />
+  </a>
+  <a href="https://github.com/LovesWorking/tanstack-query-dev-tools-expo-plugin/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/tanstack-query-dev-tools-expo-plugin.svg" alt="license" />
+  </a>
+</p>
 
-# Installation in managed Expo projects
+<br />
 
-For [managed](https://docs.expo.dev/archive/managed-vs-bare/) Expo projects, please follow the installation instructions in the [API documentation for the latest stable release](#api-documentation). If you follow the link and there is no documentation available then this library is not yet usable within managed projects &mdash; it is likely to be included in an upcoming Expo SDK release.
+Bring the power of [Tanstack Query DevTools](https://tanstack.com/query/latest/docs/react/devtools) to your Expo and React Native applications. Monitor, debug, and manipulate your queries in real-time across all your devices.
 
-# Installation in bare React Native projects
+## Features
 
-For bare React Native projects, you must ensure that you have [installed and configured the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
+✅ **Full DevTools Experience**: Access all the features from React Query DevTools in your Expo/React Native app  
+✅ **Multi-Device Support**: Connect and monitor multiple devices simultaneously  
+✅ **Device Selection**: Easily switch between connected devices or target all at once  
+✅ **Device Information**: View detailed device info for all connected devices  
+✅ **Query Management**: Monitor and interact with all your queries in real-time  
+✅ **Query Manipulation**: Refetch, invalidate, reset, and modify query data on the fly  
+✅ **Network Simulation**: Toggle device online/offline states to test network resilience  
+✅ **Error Simulation**: Trigger error states to test error handling  
+✅ **Loading Simulation**: Trigger loading states to test loading UIs  
+✅ **Cross-Platform**: Works on iOS, Android and web Expo apps  
+✅ **Compatible**: Supports both React Query v4 and v5
 
-### Add the package to your npm dependencies
+## Installation
 
+```bash
+npm install tanstack-query-dev-tools-expo-plugin --save-dev
 ```
-npm install tanstack-query-dev-tools-expo-plugin
+
+## Compatibility
+
+This plugin supports both Tanstack Query v4 and v5, utilizing APIs that have remained stable across these versions.
+
+### Requirements
+
+#### Peer Dependencies
+
+- `@tanstack/react-query`: ^4.0.0 || ^5.0.0
+- `expo`: Any version
+
+## Usage
+
+Simply import and use the `useSyncQueries` hook in your app:
+
+```typescript
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useSyncQueries } from 'tanstack-query-dev-tools-expo-plugin';
+
+const queryClient = new QueryClient();
+
+export function App() {
+  // Initialize the dev tools
+  useSyncQueries({ queryClient });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/* Your app components */}
+    </QueryClientProvider>
+  );
+}
 ```
 
-# Contributing
+## DevTools Capabilities
 
-Contributions are very welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).
+### Monitoring Queries
 
-expo start --web (defaults to development mode)
-expo start --web --no-dev (sets to production mode)
+- View active, inactive, and stale queries
+- Inspect query data, status, and metadata
+- Track query updates in real-time
 
-npm run web:dev
-npm all
-npx serve dist
+### Query Manipulation
 
-React Query clone
+- Manually trigger refetches
+- Invalidate queries to force refetches
+- Reset query cache entries
+- Modify query data directly
 
-# Terminal 1 - in query-devtools
+### Debugging Tools
 
-cd /Users/aj/Desktop/react-query-clone/packages/query-devtools
-pnpm build:dev & (while true; do yalc push --changed; sleep 2; done)
+- Simulate error states
+- Simulate loading states
+- Toggle network connectivity
+- View detailed query timings
 
-# Terminal 2 - in react-query-devtools
+### Device Management
 
-cd /Users/aj/Desktop/react-query-clone/packages/react-query-devtools
-pnpm build:dev & (while true; do yalc push --changed; sleep 2; done)
+- Connect multiple devices simultaneously
+- View detailed device information
+- Target specific devices for actions
+- Apply changes across all connected devices
 
-This app -
-yalc add @tanstack/query-devtools --watch
-yalc add @tanstack/react-query-devtools --watch
+
+## License
+
+MIT
+
+## Author
+
+[LovesWorking](https://github.com/LovesWorking)
+
+## Repository
+
+[GitHub Repository](https://github.com/LovesWorking/tanstack-query-dev-tools-expo-plugin)
