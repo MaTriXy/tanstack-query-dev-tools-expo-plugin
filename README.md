@@ -105,6 +105,3 @@ MIT
 
 [LovesWorking](https://github.com/LovesWorking)
 
-## Repository
-
-[GitHub Repository](https://github.com/LovesWorking/tanstack-query-dev-tools-expo-plugin)
