@@ -1,6 +1,32 @@
+<h1 align="center">✨✨✨ IMPORTANT NOTICE ✨✨✨</h1>
+
+> 🚨 **This plugin is no longer maintained**  
+> I’ve moved on from the Expo plugin system and built a significantly better alternative.
+
+---
+
+## 🌟 A Much Better Dev Tool Is Here! 🌟
+
+🔄 **Why the change?**  
+Expo plugins were limiting. So I built a standalone **desktop app for macOS** that works with **any JavaScript-based app** — native or non-native — and gives me **way more control** with **more stable development tools**.
+
+✅ No Expo dependency  
+✅ Works outside the plugin system  
+✅ Compatible with all JS/native app setups  
+✅ Cleaner, faster, more reliable
+
+---
+
+## 🚀 Try the New Dev Tools
+
+👉 **Check it out here:**  
+[**rn-better-dev-tools**](https://github.com/LovesWorking/rn-better-dev-tools)
+
+---
+
+
+
 <h1 align="center">Tanstack Query DevTools Expo Plugin</h1>
-
-
 
 <br />
 
